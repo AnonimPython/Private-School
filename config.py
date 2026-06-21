@@ -77,6 +77,9 @@ APP_URL = os.getenv("APP_URL", "http://localhost:8000")
 #! Debug mode — detailed errors / Режим отладки (отключить в продакшене!)
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
+#! Demo mode — read-only (no POST/PUT/DELETE). Default: false
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+
 
 #/ ═══════════════════════════════════════════════════════════════════════════════
 #/  SCHOOL INFO — customize for your school  /  ИНФОРМАЦИЯ О ШКОЛЕ

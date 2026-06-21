@@ -7,6 +7,7 @@
 #/  При запуске инициализирует БД и создаёт администратора по умолчанию
 #/ =====================================================================================
 
+import os
 import config
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -23,6 +24,19 @@ app = FastAPI(
     title=config.APP_NAME,
     debug=config.DEBUG,
 )
+
+#* ─── Demo mode middleware ───
+@app.middleware("http")
+async def demo_mode_middleware(request: Request, call_next):
+    if config.DEMO_MODE and request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        if not request.url.path.startswith("/login"):
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse(
+                "<h3 style='font-family:sans-serif;text-align:center;margin-top:4rem'>Демо-режим — изменения запрещены</h3>"
+                "<p style='font-family:sans-serif;text-align:center'><a href='/'>На главную</a></p>",
+                status_code=403,
+            )
+    return await call_next(request)
 
 #* ─── Templates ───
 templates = Jinja2Templates(directory="app/templates")
@@ -147,6 +161,7 @@ templates.env.globals.update({
     "SCHOOL_NAME": config.SCHOOL_NAME,
     "SCHOOL_CITY": config.SCHOOL_CITY,
     "DEBUG": config.DEBUG,
+    "DEMO_MODE": config.DEMO_MODE,
     "lesson_times": config.get_lesson_times,
     "school_dates": config.get_schedule_school_dates(),
     "get_school_dates": config.get_schedule_school_dates,
@@ -155,6 +170,7 @@ templates.env.globals.update({
 
 #* ─── Static files ───
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+os.makedirs(config.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=config.UPLOAD_DIR), name="uploads")
 
 #* ─── Startup ───
