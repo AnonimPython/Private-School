@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block page_title %}Моё расписание{% endblock %}
+
+{% block content %}
+{% set days_short = ['', 'ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'] %}
+<div class="schedule-scroll">
+    <div class="schedule-grid">
+        <div class="schedule-header"></div>
+        {% for d in range(1, 7) %}
+        <div class="schedule-header">{{ days_short[d] }}</div>
+        {% endfor %}
+
+        {% for lesson_num in range(1, 9) %}
+        {% set ns = namespace(time='') %}
+        {% for ln, start, end in lesson_times() %}
+            {% if ln == lesson_num %}{% set ns.time = start ~ '–' ~ end %}{% endif %}
+        {% endfor %}
+        <div class="schedule-time">
+            <div style="font-size:0.65rem;color:var(--text-muted)">{{ ns.time }}</div>
+            <div style="font-weight:600">{{ lesson_num }}</div>
+        </div>
+        {% for day in range(1, 7) %}
+        <div class="schedule-cell">
+            {% for s in week[day] if s.lesson_number == lesson_num %}
+            <a href="/teacher/class/{{ s.class_.id }}/subject/{{ s.subject.id }}" class="schedule-lesson-link">
+                <div class="schedule-class">{{ s.class_.name }}</div>
+                <div class="schedule-subject">{{ s.subject.name }}</div>
+                {% if s.classroom %}
+                <div class="schedule-room">{{ s.classroom }}</div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+@media (max-width: 886px) {
+    .schedule-scroll { overflow-x: auto; }
+    .schedule-grid { min-width: 720px; }
+    .schedule-time { font-size: 0.7rem; }
+    .schedule-lesson-link { padding: 0.3rem; }
+}
+@media (max-width: 820px) {
+    .schedule-scroll { overflow-x: auto; }
+    .schedule-grid { min-width: 640px; }
+}
+@media (max-width: 743px) {
+    .schedule-grid { min-width: 560px; }
+    .schedule-time { font-size: 0.6rem; }
+    .schedule-lesson-link { padding: 0.2rem; }
+    .schedule-class { font-size: 0.7rem; }
+    .schedule-subject { font-size: 0.6rem; }
+}
+@media (max-width: 492px) {
+    .schedule-grid { min-width: 480px; }
+    .schedule-time { font-size: 0.55rem; }
+    .schedule-lesson-link { padding: 0.15rem; }
+}
+</style>
+{% endblock %}

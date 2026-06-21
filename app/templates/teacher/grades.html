@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+{% block page_title %}{{ class_.name }} — {{ subject.name }}{% endblock %}
+
+{% block content %}
+<div class="grades-page">
+    {# ─── Combined top card: header + grade entry ─── #}
+    <form method="POST" action="/teacher/grade/batch" id="gradeForm" style="flex-shrink:0">
+        <input type="hidden" name="class_id" value="{{ class_.id }}">
+        <input type="hidden" name="subject_id" value="{{ subject.id }}">
+        <input type="hidden" name="term" value="{{ term }}">
+        <div class="card" style="padding:0.5rem 0.75rem">
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem">
+                <h3 class="card-title" style="font-size:0.95rem;white-space:nowrap">{{ class_.name }} · {{ subject.name }}</h3>
+                {% for t in terms %}
+                <a href="/teacher/class/{{ class_.id }}/subject/{{ subject.id }}?term={{ t }}" class="btn btn-sm {% if term == t %}btn-primary{% else %}btn-outline{% endif %}" style="font-size:0.8rem;padding:0.2rem 0.5rem">{% if t == 1 %}I{% elif t == 2 %}II{% else %}III{% endif %}</a>
+                {% endfor %}
+                <a href="/teacher/class/{{ class_.id }}/subject/{{ subject.id }}?term=0" class="btn btn-sm {% if term == 0 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size:0.8rem;padding:0.2rem 0.5rem">Все</a>
+                <a href="/teacher/analytics/{{ class_.id }}/{{ subject.id }}" class="btn btn-outline btn-sm" style="font-size:0.8rem;padding:0.2rem 0.5rem" title="Аналитика">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </a>
+                <form method="POST" action="/teacher/class/{{ class_.id }}/subject/{{ subject.id }}/generate-yearly" style="display:inline">
+                    <button type="submit" class="btn btn-success btn-sm" style="font-size:0.8rem;padding:0.2rem 0.5rem" onclick="return confirm('Сформировать годовые оценки?')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        Год
+                    </button>
+                </form>
+                <div style="display:flex;align-items:center;gap:0.3rem">
+                    <input type="date" name="grade_date" class="form-control" style="width:120px;padding:0.2rem 0.4rem;font-size:0.8rem" value="{{ today }}" title="Дата">
+                    <input type="text" name="batch_comment" class="form-control" style="width:110px;padding:0.2rem 0.4rem;font-size:0.8rem" placeholder="Комм." title="Комментарий">
+                    <button type="submit" class="btn btn-primary btn-sm" style="font-size:0.8rem;padding:0.2rem 0.6rem">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Сохранить
+                    </button>
+                </div>
+            </div>
+            {% if error %}
+            <div class="alert alert-error" style="margin:0 0 0.35rem;padding:0.2rem 0.5rem;font-size:0.7rem">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+            <div class="alert alert-success" style="margin:0 0 0.35rem;padding:0.2rem 0.5rem;font-size:0.7rem">{{ success }}</div>
+            {% endif %}
+            <div class="entry-students-list" style="max-height:120px">
+                {% for student in students %}
+                <div class="entry-student-row">
+                    <strong>{{ student.last_name }} {{ student.first_name }}</strong>
+                    <select name="grade_{{ student.id }}" class="grade-select" form="gradeForm">
+                        <option value="">—</option>
+                        <option value="5" class="grade-opt-5">5</option>
+                        <option value="4" class="grade-opt-4">4</option>
+                        <option value="3" class="grade-opt-3">3</option>
+                        <option value="2" class="grade-opt-2">2</option>
+                        <option value="1" class="grade-opt-1">1</option>
+                        <option value="н" class="grade-opt-absent">Н</option>
+                        <option value="б" class="grade-opt-sick">Б</option>
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </form>
+
+    {# ─── Grade history ─── #}
+    <div class="card" style="flex:1;display:flex;flex-direction:column;padding:0;min-height:0;overflow:hidden">
+        <div class="card-header" style="padding:0.5rem 0.75rem;flex-shrink:0">
+            <h3 class="card-title" style="font-size:0.9rem">История оценок</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted)">{{ date_columns|length }} учебных дней</span>
+        </div>
+        <div class="grades-scroll-container">
+            <div class="grades-table-wrap">
+                <table class="grade-table" style="font-size:0.75rem">
+                    <thead>
+                        <tr>
+                            <th class="grades-th-fixed">Ученик</th>
+                            {% for d in date_columns %}
+                            <th class="grades-th-date">{{ d.strftime('%d.%m') }}</th>
+                            {% endfor %}
+                            <th class="grades-th-avg">Средний</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td class="grades-td-fixed">
+                                {{ student.last_name }} {{ student.first_name }}
+                            </td>
+                            {% for d in date_columns %}
+                            <td class="grades-td-grade">
+                                {% set key = student.id|string ~ '|' ~ d.isoformat() %}
+                                {% set g = grade_map.get(key) %}
+                                {% if g %}
+                                    {% if g.attendance_status == "absent" %}
+                                    <div class="grade-value grade-absent"
+                                         style="width:24px;height:24px;font-size:0.6rem;margin:0 auto;cursor:pointer;background:var(--red);color:var(--white);border-radius:4px"
+                                         title="Отсутствовал — {{ g.comment or '' }}"
+                                         onclick="document.getElementById('editGrade{{ g.id|replace('-','_') }}').classList.add('active')">Н</div>
+                                    {% elif g.attendance_status == "sick" %}
+                                    <div class="grade-value grade-sick"
+                                         style="width:24px;height:24px;font-size:0.6rem;margin:0 auto;cursor:pointer;background:var(--blue-600);color:var(--white);border-radius:4px"
+                                         title="Болеет — {{ g.comment or '' }}"
+                                         onclick="document.getElementById('editGrade{{ g.id|replace('-','_') }}').classList.add('active')">Б</div>
+                                    {% else %}
+                                    <div class="grade-value grade-{{ g.value|int }}"
+                                         style="width:24px;height:24px;font-size:0.6rem;margin:0 auto;cursor:pointer;border-radius:4px"
+                                         title="{{ g.comment or '' }}"
+                                         onclick="document.getElementById('editGrade{{ g.id|replace('-','_') }}').classList.add('active')">
+                                        {{ g.value|int }}
+                                    </div>
+                                    {% endif %}
+                                <div class="modal" id="editGrade{{ g.id|replace('-','_') }}">
+                                    <div class="modal-content grade-modal">
+                                        <div class="modal-header">
+                                            <h3>Изменить оценку</h3>
+                                            <button class="modal-close" onclick="this.closest('.modal').classList.remove('active')">&times;</button>
+                                        </div>
+                                        <form method="POST" action="/teacher/grade/{{ g.id }}/edit">
+                                            <input type="hidden" name="class_id" value="{{ class_.id }}">
+                                            <input type="hidden" name="subject_id" value="{{ subject.id }}">
+                                            <input type="hidden" name="term" value="{{ term }}">
+                                            <div class="form-group">
+                                                <label>Оценка</label>
+                                                <select name="value" class="form-control">
+                                                    <option value="">—</option>
+                                                    <option value="5" {% if g.value == 5 %}selected{% endif %}>5</option>
+                                                    <option value="4" {% if g.value == 4 %}selected{% endif %}>4</option>
+                                                    <option value="3" {% if g.value == 3 %}selected{% endif %}>3</option>
+                                                    <option value="2" {% if g.value == 2 %}selected{% endif %}>2</option>
+                                                    <option value="1" {% if g.value == 1 %}selected{% endif %}>1</option>
+                                                    <option value="н" {% if g.attendance_status == 'absent' %}selected{% endif %}>Н (отсутствовал)</option>
+                                                    <option value="б" {% if g.attendance_status == 'sick' %}selected{% endif %}>Б (болеет)</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Комментарий</label>
+                                                <input type="text" name="comment" class="form-control" value="{{ g.comment or '' }}" placeholder="Опционально">
+                                            </div>
+                                            <div class="grade-modal-actions">
+                                                <button type="button" class="btn btn-outline btn-sm grade-modal-delete" onclick="confirmDelete(this, '{{ g.id }}', '{{ class_.id }}', '{{ subject.id }}')">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                    Удалить
+                                                </button>
+                                                <div class="grade-modal-right">
+                                                    <button type="button" class="btn btn-outline" onclick="this.closest('.modal').classList.remove('active')">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                                        Отмена
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                                        Сохранить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                        <form method="POST" action="/teacher/grade/{{ g.id }}/delete?class_id={{ class_.id }}&subject_id={{ subject.id }}" id="deleteForm{{ g.id|replace('-','_') }}" style="display:none"></form>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted" style="font-size:0.55rem">—</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="grades-td-avg">
+                                {% if averages.get(student.id|string) %}
+                                <div class="grade-value grade-{{ averages[student.id|string]|int }}" style="width:24px;height:24px;font-size:0.6rem;margin:0 auto;border-radius:4px">
+                                    {{ averages[student.id|string] }}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.grades-page {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+    min-height: 0;
+}
+.entry-students-list {
+    max-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 0.25rem 0.25rem;
+}
+.entry-student-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    transition: background 0.1s;
+}
+.entry-student-row:hover {
+    background: var(--bg-hover);
+}
+.entry-student-row strong {
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.entry-student-row select {
+    flex-shrink: 0;
+    width: 64px;
+    padding: 0.15rem 0.2rem;
+    font-size: 0.85rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-input);
+    color: var(--text);
+    cursor: pointer;
+}
+.entry-student-row select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+}
+.grades-scroll-container {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    box-sizing: border-box;
+    flex: 1;
+}
+.grades-table-wrap {
+    flex: 0 0 auto;
+}
+.grades-table-wrap table {
+    min-width: 100%;
+}
+.grades-th-fixed {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    min-width: 120px;
+    background: var(--bg);
+    text-align: left;
+}
+.grades-th-date {
+    min-width: 32px;
+    font-size: 0.55rem;
+    padding: 0.15rem 0.2rem;
+    text-align: center;
+    vertical-align: bottom;
+    line-height: 1.2;
+}
+.grades-th-avg {
+    min-width: 56px;
+    position: sticky;
+    right: 0;
+    z-index: 3;
+    background: var(--bg);
+}
+.grades-td-fixed {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg-card);
+    font-weight: 500;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.grades-td-grade {
+    text-align: center;
+    padding: 0.1rem;
+}
+.grades-td-avg {
+    text-align: center;
+    padding: 0.1rem;
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: var(--bg-card);
+}
+.grade-opt-1 { background:#111827; color:var(--white); }
+.grade-opt-2 { background:var(--red); color:var(--white); }
+.grade-opt-3 { background:var(--amber); color:var(--white); }
+.grade-opt-4 { background:#16a34a; color:var(--white); }
+.grade-opt-5 { background:var(--green); color:var(--white); }
+.grade-select option { padding:0.25rem; }
+
+.grade-modal .modal-content {
+    max-width: 420px;
+}
+.grade-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+.grade-modal-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.grade-modal-delete {
+    color: var(--red) !important;
+    border-color: var(--red) !important;
+    transition: all 0.2s ease;
+}
+.grade-modal-delete:hover {
+    background: var(--red) !important;
+    color: #fff !important;
+    border-color: var(--red) !important;
+}
+.grade-modal-delete.confirming {
+    background: var(--red) !important;
+    color: #fff !important;
+    border-color: var(--red) !important;
+    animation: pulse-warn 0.6s ease infinite alternate;
+}
+@keyframes pulse-warn {
+    from { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+    to { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+
+@media (max-width: 912px) {
+    .grades-page .card > div:first-child { gap: 0.3rem; }
+    .grades-page .card > div:first-child .btn { font-size: 0.75rem; padding: 0.2rem 0.4rem; }
+    .grades-th-fixed { min-width: 100px; }
+}
+@media (max-width: 886px) {
+    .grades-page .card > div:first-child .btn { font-size: 0.7rem; padding: 0.15rem 0.35rem; }
+    .grades-th-fixed { min-width: 90px; }
+    .entry-student-row strong { font-size: 0.8rem; }
+}
+@media (max-width: 743px) {
+    .grades-th-fixed { min-width: 80px; }
+    .entry-student-row { gap: 0.3rem; }
+    .entry-student-row strong { font-size: 0.75rem; }
+    .entry-student-row select { width: 56px; font-size: 0.75rem; }
+}
+@media (max-width: 492px) {
+    .grades-page .card > div:first-child { flex-wrap: wrap; }
+    .grades-page .card > div:first-child .btn { font-size: 0.65rem; padding: 0.15rem 0.3rem; }
+    .entry-student-row strong { max-width: 120px; }
+    .entry-student-row select { width: 48px; font-size: 0.7rem; }
+}
+@media (max-width: 390px) {
+    .entry-students-list { max-height: 70px !important; }
+    .entry-student-row { gap: 0.25rem; padding: 0.1rem 0.2rem; }
+    .entry-student-row strong { font-size: 0.7rem; max-width: 90px; }
+    .entry-student-row select { width: 42px; font-size: 0.65rem; padding: 0.1rem; }
+    .grades-th-fixed { min-width: 70px !important; font-size: 0.55rem; }
+    .grades-th-date { min-width: 20px !important; font-size: 0.4rem; padding: 0.1rem; }
+    .grades-td-fixed { font-size: 0.6rem; padding: 0.1rem 0.3rem; }
+    .grade-modal-actions { flex-direction: column; align-items: stretch; }
+    .grade-modal-right { justify-content: flex-end; }
+}
+@media (max-width: 375px) {
+    .grades-page .card > div:first-child input { width: 70px !important; font-size: 0.6rem; }
+}
+</style>
+
+<script>
+function confirmDelete(btn, gradeId, classId, subjectId) {
+    if (btn.classList.contains('confirming')) {
+        var form = document.getElementById('deleteForm' + gradeId.replace(/-/g, '_'));
+        if (form) form.submit();
+        return;
+    }
+    btn.classList.add('confirming');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><polyline points="20 6 9 17 4 12"/></svg> Подтвердить';
+    btn.title = 'Нажмите ещё раз для подтверждения';
+    setTimeout(function() {
+        btn.classList.remove('confirming');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Удалить';
+        btn.title = '';
+    }, 3000);
+}
+</script>
+{% endblock %}

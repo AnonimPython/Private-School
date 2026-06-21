@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block page_title %}Главная{% endblock %}
+
+{% block content %}
+{% if enrollment %}
+<div style="max-width:960px;margin:0 auto">
+    <div class="stats-grid">
+        <div class="stat-card animate-in">
+            <div class="stat-icon" style="background:#fce7f3;color:#ec4899">{{ icons.building() }}</div>
+            <div class="stat-value">{{ enrollment.class_.name }}</div>
+            <div class="stat-label">{{ enrollment.class_.grade_level }} класс</div>
+        </div>
+        <div class="stat-card animate-in" style="animation-delay:0.1s">
+            <div class="stat-icon" style="background:var(--purple-50);color:var(--purple)">{{ icons.user() }}</div>
+            <div class="stat-value">{{ user.last_name }} {{ user.first_name }}{% if user.middle_name %} {{ user.middle_name }}{% endif %}</div>
+            <div class="stat-label">{{ user.username }}</div>
+        </div>
+        <div class="stat-card animate-in" style="animation-delay:0.2s">
+            <div class="stat-icon" style="background:var(--amber-50);color:var(--amber)">{{ icons.calendar() }}</div>
+            <div class="stat-value">{{ today.strftime('%d.%m.%Y') }}</div>
+            <div class="stat-label">Сегодня</div>
+        </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:1rem">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Оценки за сегодня</h3>
+                <a href="/student/grades" class="btn btn-outline btn-sm">Все</a>
+            </div>
+            {% set ns = namespace(found=false) %}
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                {% for g in grades %}
+                {% if g.grade_date == today %}
+                {% set ns.found = true %}
+                <div style="text-align:center">
+                    {% if g.attendance_status == "absent" %}
+                    <div class="grade-value grade-absent" style="background:var(--red);color:var(--white)" title="{{ g.subject.name }} — {{ g.grade_date.strftime('%d.%m.%Y') }} | {{ g.teacher.last_name }}">Н</div>
+                    {% elif g.attendance_status == "sick" %}
+                    <div class="grade-value grade-sick" style="background:var(--blue-600);color:var(--white)" title="{{ g.subject.name }} — {{ g.grade_date.strftime('%d.%m.%Y') }} | {{ g.teacher.last_name }}">Б</div>
+                    {% else %}
+                    <div class="grade-value grade-{{ g.value|int }}" title="{{ g.subject.name }} — {{ g.grade_date.strftime('%d.%m.%Y') }} | {{ g.teacher.last_name }}">{{ g.value|int }}</div>
+                    {% endif %}
+                    <div style="font-size:0.7rem;color:var(--text-muted)">{{ g.subject.name }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% if not ns.found %}
+            <div class="empty-state"><p>Сегодня оценок нет</p></div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Средний балл</h3>
+            </div>
+            {% if subjects_avg %}
+            <div style="display:flex;flex-direction:column;gap:0.5rem">
+                {% for name, avg in subjects_avg.items() %}
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:0.9rem">{{ name }}</span>
+                    <span class="grade-value grade-{{ avg|int }}">{{ avg }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>Нет данных</p></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:1rem">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Домашние задания</h3>
+                <a href="/student/homework" class="btn btn-outline btn-sm">Все</a>
+            </div>
+            {% if homeworks %}
+            <div style="display:flex;flex-direction:column;gap:0.5rem">
+                {% for hw in homeworks %}
+                <div style="padding:0.5rem;background:var(--bg-tertiary);border-radius:0.5rem">
+                    <div style="font-weight:600;font-size:0.9rem">{{ hw.title }}</div>
+                    <div style="font-size:0.8rem;color:var(--text-muted)">{{ hw.subject.name }} · {{ hw.lesson_date.strftime('%d.%m') }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>Домашних заданий нет</p></div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Новости</h3>
+                <a href="/news" class="btn btn-outline btn-sm">Все</a>
+            </div>
+            {% if news %}
+            <div style="display:flex;flex-direction:column;gap:0.5rem">
+                {% for n in news %}
+                <a href="/news/{{ n.id }}" style="text-decoration:none;color:var(--text-primary);padding:0.5rem;background:var(--bg-tertiary);border-radius:0.5rem;display:block">
+                    <div style="font-weight:600;font-size:0.9rem">{{ n.title }}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted)">
+                        {% if n.news_type == 'holiday' %}{{ icons.calendar() }} Каникулы
+                        {% elif n.news_type == 'announcement' %}{{ icons.megaphone() }} Объявление
+                        {% elif n.news_type == 'event' %}{{ icons.star() }} Событие
+                        {% else %}{{ icons.file_text() }} Новость{% endif %}
+                        · {{ n.created_at.strftime('%d.%m.%Y') if n.created_at else '' }}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>Новостей нет</p></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <p>Вы ещё не прикреплены к классу. Обратитесь к администратору.</p>
+    </div>
+</div>
+{% endif %}
+<style>
+@media (max-width: 912px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 886px) {
+  .stat-card { padding: 0.85rem; }
+}
+@media (max-width: 743px) {
+  .stat-card { padding: 0.7rem; }
+  .stat-value { font-size: 1.4rem; }
+}
+@media (max-width: 492px) {
+  .stat-card { padding: 0.6rem; }
+  .stat-value { font-size: 1.2rem; }
+}
+@media (max-width: 430px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .stat-card { padding: 0.35rem; }
+  .stat-value { font-size: 1.1rem; }
+  .grid.grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 390px) {
+  .stat-value { font-size: 1rem; }
+}
+</style>
+{% endblock %}

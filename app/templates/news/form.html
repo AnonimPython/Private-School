@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block page_title %}{% if edit %}Редактировать{% else %}Создать{% endif %} новость{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:700px;margin:0 auto">
+    <div class="card-header">
+        <h3 class="card-title">{% if edit %}Редактирование{% else %}Создание{% endif %} новости</h3>
+    </div>
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="{% if edit %}/news/{{ news.id }}/edit{% else %}/news/create{% endif %}">
+        <div class="form-group">
+            <label>Заголовок *</label>
+            <input type="text" name="title" class="form-control" value="{{ news.title if edit else '' }}" required>
+        </div>
+        <div class="form-group">
+            <label>Содержание</label>
+            <textarea name="content" class="form-control" rows="8">{{ news.content if edit else '' }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Тип</label>
+                <select name="news_type" class="form-control">
+                    <option value="news" {% if edit and news.news_type == 'news' %}selected{% endif %}>{{ icons.file_text() }} Новость</option>
+                    <option value="holiday" {% if edit and news.news_type == 'holiday' %}selected{% endif %}>{{ icons.calendar() }} Каникулы</option>
+                    <option value="announcement" {% if edit and news.news_type == 'announcement' %}selected{% endif %}>{{ icons.megaphone() }} Объявление</option>
+                    <option value="event" {% if edit and news.news_type == 'event' %}selected{% endif %}>{{ icons.star() }} Событие/праздник</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem;cursor:pointer">
+                    <input type="checkbox" name="is_pinned" {% if edit and news.is_pinned %}checked{% endif %}>
+                    Закрепить
+                </label>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Дата начала</label>
+                <input type="date" name="start_date" class="form-control" value="{{ news.start_date.strftime('%Y-%m-%d') if edit and news.start_date else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Дата окончания</label>
+                <input type="date" name="end_date" class="form-control" value="{{ news.end_date.strftime('%Y-%m-%d') if edit and news.end_date else '' }}">
+            </div>
+        </div>
+        <div class="btn-group" style="margin-top:1rem">
+            <button type="submit" class="btn btn-primary">{% if edit %}Сохранить{% else %}Создать{% endif %}</button>
+            <a href="/news" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+<style>
+@media (max-width: 886px) {
+  .card[style*="max-width:700px"] { max-width: 90% !important; }
+  .form-row { gap: 0.75rem; }
+}
+@media (max-width: 743px) {
+  .card[style*="max-width:700px"] { max-width: 100% !important; margin: 0.5rem; }
+  .form-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 492px) {
+  .card-header h3 { font-size: 1.05rem; }
+  .form-group label { font-size: 0.85rem; }
+}
+@media (max-width: 430px) {
+  .card[style*="max-width:700px"] { max-width: 100% !important; }
+  .form-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  textarea { font-size: 0.75rem; }
+  .form-group label { font-size: 0.75rem; }
+}
+@media (max-width: 390px) {
+  .card-header h3 { font-size: 1rem; }
+}
+</style>
+{% endblock %}

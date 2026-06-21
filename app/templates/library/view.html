@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block page_title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+    <div>
+        {% if item.description %}
+        <p style="font-size:0.85rem;color:var(--text-secondary)">{{ item.description }}</p>
+        {% endif %}
+        <div style="font-size:0.75rem;color:var(--text-muted);display:flex;gap:1rem;flex-wrap:wrap">
+            <span>{{ item.uploader.last_name }} {{ item.uploader.first_name }}</span>
+            {% if item.subject %}<span>· {{ item.subject.name }}</span>{% endif %}
+            {% if item.class_ %}<span>· {{ item.class_.name }}</span>{% endif %}
+            <span>· {{ item.created_at.strftime('%d.%m.%Y') if item.created_at else '' }}</span>
+        </div>
+    </div>
+    <div class="btn-group">
+        <a href="{{ item.file_path }}" download class="btn btn-primary btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.25rem"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Скачать
+        </a>
+        {% if user.role in ('teacher', 'admin', 'director') %}
+        <form method="POST" action="/library/{{ item.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить материал?')">
+            <button type="submit" class="btn btn-danger btn-sm">{{ icons.trash(14) }} Удалить</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+    <embed src="{{ item.file_path }}#toolbar=1&navpanes=0&scrollbar=1" type="application/pdf" style="width:100%;height:calc(100vh - 280px);border:none">
+</div>
+<style>
+@media (max-width: 912px) {
+  .card embed { height: calc(100vh - 240px); }
+}
+@media (max-width: 886px) {
+  .card embed { height: calc(100vh - 260px); }
+}
+@media (max-width: 743px) {
+  .card embed { height: calc(100vh - 280px); }
+  .btn-group { flex-wrap: wrap; gap: 0.25rem; }
+}
+@media (max-width: 492px) {
+  .card embed { height: calc(100vh - 220px); }
+  .btn-group .btn { font-size: 0.75rem; padding: 0.25rem 0.4rem; }
+}
+@media (max-width: 430px) {
+  .card embed { height: calc(100vh - 180px); }
+  .card { padding: 0.4rem; }
+  .btn-group .btn { font-size: 0.65rem; padding: 0.2rem 0.35rem; }
+}
+@media (max-width: 390px) {
+  .card embed { height: calc(100vh - 180px); }
+}
+</style>
+{% endblock %}

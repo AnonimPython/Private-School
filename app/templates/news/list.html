@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block page_title %}Новости и события{% endblock %}
+
+{% block content %}
+<div class="grid grid-2" style="margin-bottom:1.5rem">
+    <div class="calendar">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <a href="/news?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline btn-sm">‹</a>
+                <span style="font-weight:600;font-size:1.1rem">{{ month_name }} {{ year }}</span>
+                <a href="/news?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline btn-sm">›</a>
+            </div>
+            <span class="text-muted">{{ today.strftime('%d.%m.%Y') }}</span>
+        </div>
+        <div class="calendar-grid">
+            <div class="calendar-day-header">ПН</div>
+            <div class="calendar-day-header">ВТ</div>
+            <div class="calendar-day-header">СР</div>
+            <div class="calendar-day-header">ЧТ</div>
+            <div class="calendar-day-header">ПТ</div>
+            <div class="calendar-day-header">СБ</div>
+            <div class="calendar-day-header">ВС</div>
+
+            {# Пустые ячейки до первого дня #}
+            {% for _ in range(1, first_weekday) %}
+            <div class="calendar-day other-month"></div>
+            {% endfor %}
+
+            {# Дни месяца #}
+            {% for day in range(1, days_in_month + 1) %}
+            {% set is_today = day == today.day and month == today.month and year == today.year %}
+            <div class="calendar-day {% if is_today %}today{% endif %}">
+                <div class="calendar-day-number">{{ day }}</div>
+                {% if event_days.get(day) %}
+                {% for event in event_days[day] %}
+                <a href="/news/{{ event.id }}" class="calendar-event event-{{ event.news_type }}" title="{{ event.title }}">
+                    {{ event.title[:20] }}{% if event.title|length > 20 %}…{% endif %}
+                </a>
+                {% endfor %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <h3 style="font-size:1.1rem">Лента новостей</h3>
+            {% if user and user.role in ('director', 'admin', 'teacher') %}
+            <a href="/news/create" class="btn btn-primary btn-sm">{{ icons.plus(14) }} Создать</a>
+            {% endif %}
+        </div>
+        {% for n in news_list %}
+        <div class="news-card {% if n.is_pinned %}pinned{% endif %}">
+            {% if n.news_type %}
+            <span class="news-type-badge {{ n.news_type }}">
+                {% if n.news_type == 'holiday' %}{{ icons.calendar() }} Каникулы
+                {% elif n.news_type == 'announcement' %}{{ icons.megaphone() }} Объявление
+                {% elif n.news_type == 'event' %}{{ icons.star() }} Событие
+                {% else %}{{ icons.file_text() }} Новость{% endif %}
+            </span>
+            {% endif %}
+            <h3 class="news-title"><a href="/news/{{ n.id }}" style="color:var(--text-primary)">{{ n.title }}</a></h3>
+            {% if n.content %}
+            <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:0.5rem">{{ n.content[:200] }}{% if n.content|length > 200 %}…{% endif %}</p>
+            {% endif %}
+            <div class="news-meta">
+                {% if n.start_date and n.end_date %}
+                {{ icons.calendar(14) }} {{ n.start_date.strftime('%d.%m') }} — {{ n.end_date.strftime('%d.%m.%Y') }}
+                {% elif n.start_date %}
+                {{ icons.calendar(14) }} {{ n.start_date.strftime('%d.%m.%Y') }}
+                {% endif %}
+                · {{ icons.user(14) }} {{ n.author.first_name if n.author else '' }} {{ n.author.last_name if n.author else '' }}
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="empty-state"><p>Новостей пока нет</p></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<style>
+@media (max-width: 912px) {
+  .calendar-day { min-height: 52px; padding: 0.35rem; font-size: 0.75rem; }
+  .calendar-event { font-size: 0.6rem; padding: 0.1rem 0.25rem; }
+}
+@media (max-width: 886px) {
+  .news-card { padding: 0.8rem; }
+  .news-title { font-size: 1rem; }
+  .calendar-day { min-height: 48px; padding: 0.3rem; font-size: 0.7rem; }
+}
+@media (max-width: 743px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  .calendar-day { min-height: 44px; }
+  .news-card .news-type-badge { font-size: 0.7rem; }
+}
+@media (max-width: 492px) {
+  .calendar-nav span { font-size: 0.9rem; }
+  .news-card { padding: 0.7rem; }
+  .news-title { font-size: 0.95rem; }
+}
+@media (max-width: 430px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  .calendar-day { min-height: 36px; padding: 0.2rem; font-size: 0.65rem; }
+  .calendar-event { font-size: 0.5rem; padding: 0.08rem 0.2rem; }
+  .news-card { padding: 0.5rem; }
+  .news-card .news-type-badge { font-size: 0.6rem; padding: 0.1rem 0.3rem; }
+}
+@media (max-width: 390px) {
+  .calendar-day { min-height: 36px; padding: 0.2rem; }
+  .calendar-day-header { font-size: 0.55rem; padding: 0.2rem; }
+}
+@media (max-width: 375px) {
+  .calendar-nav span { font-size: 0.85rem; }
+}
+</style>
+{% endblock %}

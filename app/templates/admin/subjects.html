@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+<!--/ subjects.html — Управление предметами: добавление и удаление / Subject management: add and delete -->
+{% block page_title %}Предметы{% endblock %}
+
+{% block content %}
+<!--* ===== Форма добавления предмета / Add subject form ===== -->
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title">Добавить предмет</h3>
+    </div>
+    <form method="POST" action="/admin/subjects/create" class="form-row" style="align-items:end">
+        <div class="form-group">
+            <label>Название предмета</label>
+            <input type="text" name="name" class="form-control" placeholder="Математика" required>
+        </div>
+        <div class="form-group">
+            <label>Код (опционально)</label>
+            <input type="text" name="code" class="form-control" placeholder="MATH">
+        </div>
+        <button type="submit" class="btn btn-primary">Добавить</button>
+    </form>
+</div>
+
+<!--/ ===== Таблица предметов / Subjects table ===== -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Все предметы</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Название</th><th>Код</th><th>Действия</th></tr>
+            </thead>
+            <tbody>
+                {% for s in subjects %}
+                <tr>
+                    <td><strong>{{ s.name }}</strong></td>
+                    <td>{{ s.code or '—' }}</td>
+                    <td>
+                        <form method="POST" action="/admin/subjects/{{ s.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить предмет?')">
+                            <button type="submit" class="btn btn-danger btn-sm">{{ icons.trash() }}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3"><div class="empty-state">Предметов пока нет</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<style>
+@media (max-width: 912px) {
+  .form-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 886px) {
+  .form-row { gap: 0.75rem; }
+  .table-wrapper td { font-size: 0.85rem; padding: 0.4rem 0.5rem; }
+}
+@media (max-width: 743px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-row .btn { width: 100%; }
+}
+@media (max-width: 492px) {
+  .form-row .btn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+}
+@media (max-width: 430px) {
+  .form-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  .form-row .btn { width: 100%; font-size: 0.65rem; padding: 0.3rem 0.45rem; }
+  .form-control { font-size: 0.7rem; padding: 0.3rem 0.4rem; }
+}
+</style>
+<!--/ ===== Конец subjects.html / End subjects.html ===== -->
+{% endblock %}

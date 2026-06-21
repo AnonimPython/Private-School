@@ -1,0 +1,124 @@
+<!--/ ────────────────────────────────────────────────────────────────
+    Salary report template / Шаблон зарплатного отчёта
+    Shows all teachers with monthly salary, hours, and hourly rate
+    Список учителей с зарплатой, часами и ставкой в час
+──────────────────────────────────────────────────────────────── -->
+{% extends "base.html" %}
+{% block page_title %}Зарплатный отчёт{% endblock %}
+{% block content %}
+<!--! ─── Controls / Кнопки управления ─── -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">Зарплатный отчёт</h3>
+        <button class="btn btn-success btn-sm" onclick="window.print()">{{ icons.printer() }} Распечатать зарплатный лист</button>
+        <a href="/admin/reports/salary/pdf" class="btn btn-primary btn-sm" target="_blank">{{ icons.file_text() }} Скачать PDF-ведомость</a>
+    </div>
+    <!--? Если нет учителей с зарплатой — показываем подсказку -->
+    {% if teacher_count == 0 %}
+    <div class="empty-state">Нет учителей с указанной зарплатой</div>
+    {% else %}
+    <!--* ─── Summary / Итоговая сумма ─── -->
+    <div style="display:flex;gap:1rem;padding:1rem 1.25rem;flex-wrap:wrap">
+        <div class="salary-summary-card">
+            <span class="salary-summary-value">{{ teacher_count }}</span>
+            <span class="salary-summary-label">Учителей</span>
+        </div>
+        <div class="salary-summary-card">
+            <span class="salary-summary-value">{{ "{:,.0f}".format(total_salary) }}</span>
+            <span class="salary-summary-label">Общий фонд ЗП (руб/мес)</span>
+        </div>
+        <div class="salary-summary-card">
+            <span class="salary-summary-value">{{ "{:,.0f}".format(total_salary / teacher_count) if teacher_count > 0 else 0 }}</span>
+            <span class="salary-summary-label">Средняя ЗП (руб/мес)</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!--* ─── Teachers table / Таблица учителей ─── -->
+{% if teacher_data %}
+<div class="card">
+    <div class="table-wrapper">
+        <table class="salary-table">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>ФИО</th>
+                    <th>Стаж (лет)</th>
+                    <th>Зарплата (руб/мес)</th>
+                    <th>Часов/нед</th>
+                    <th>Ставка (руб/час)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for td in teacher_data %}
+                {% set t = td.teacher %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ t.last_name }} {{ t.first_name }} {{ t.middle_name or '' }}</strong></td>
+                    <td>{{ t.experience_years or '—' }}</td>
+                    <td class="salary-num">{{ "{:,.0f}".format(t.salary_monthly) if t.salary_monthly else '—' }}</td>
+                    <td class="salary-num">{{ t.hours_per_week or '—' }}</td>
+                    <td class="salary-num">
+                        {% if td.hourly_rate %}
+                        <span class="hourly-rate">{{ td.hourly_rate }}</span>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3"><strong>Итого:</strong></td>
+                    <td class="salary-num"><strong>{{ "{:,.0f}".format(total_salary) }}</strong></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!--/ ─── Styles / Стили ─── -->
+<style>
+.mb-4 { margin-bottom: 1.5rem; }
+.salary-summary-card {
+    background: var(--bg-secondary, #f8f9fa);
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    flex: 1;
+    min-width: 140px;
+}
+.salary-summary-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary, #4361ee);
+    line-height: 1.2;
+}
+.salary-summary-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+.salary-table { width: 100%; border-collapse: collapse; }
+.salary-table th { text-align: left; padding: 0.5rem 0.75rem; font-size: 0.8rem; font-weight: 600; background: var(--bg-secondary, #f8f9fa); border-bottom: 2px solid var(--border, #dee2e6); }
+.salary-table td { padding: 0.45rem 0.75rem; font-size: 0.85rem; border-bottom: 1px solid var(--border, #eee); }
+.salary-table tfoot td { padding: 0.5rem 0.75rem; font-size: 0.85rem; border-top: 2px solid var(--border, #dee2e6); background: var(--bg-secondary, #f8f9fa); }
+.salary-num { text-align: right; font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; }
+.hourly-rate { display: inline-block; padding: 0.1rem 0.4rem; background: var(--green-50); color: var(--green-700); border-radius: 0.25rem; font-weight: 700; }
+.text-muted { color: var(--text-muted, #999); }
+.empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted, #999); font-size: 0.9rem; }
+@media print { .sidebar, .top-bar, .menu-toggle, .sidebar-overlay, .mobile-bottom-nav, .sidebar-footer, .theme-toggle { display: none !important; } .main-content { margin-left: 0 !important; padding-bottom: 0 !important; } .card { break-inside: avoid; page-break-inside: avoid; } body { padding-bottom: 0; } }
+@media (max-width: 886px) { .salary-table td { font-size: 0.8rem; padding: 0.35rem 0.5rem; } .salary-summary-value { font-size: 1.25rem; } }
+@media (max-width: 743px) { .salary-table td { font-size: 0.75rem; padding: 0.3rem 0.4rem; } .salary-summary-card { min-width: 100px; padding: 0.5rem 0.75rem; } }
+@media (max-width: 492px) { .salary-table td { font-size: 0.7rem; padding: 0.25rem; } .salary-num { font-size: 0.75rem; } .salary-summary-value { font-size: 1rem; } .salary-summary-card { min-width: 80px; } }
+@media (max-width: 430px) { .salary-table td { font-size: 0.65rem; padding: 0.2rem; } .salary-num { font-size: 0.7rem; } }
+</style>
+{% endblock %}

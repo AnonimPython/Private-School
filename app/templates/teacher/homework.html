@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block page_title %}Домашние задания{% endblock %}
+
+{% block content %}
+<div class="grid grid-2" style="margin-bottom:1.5rem">
+    <div class="calendar" id="hw-calendar">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline btn-sm">&lsaquo;</a>
+                <span style="font-weight:600;font-size:1.1rem">{{ month_name }} {{ year }}</span>
+                <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline btn-sm">&rsaquo;</a>
+            </div>
+        </div>
+        <div class="calendar-grid">
+            <div class="calendar-day-header">ПН</div>
+            <div class="calendar-day-header">ВТ</div>
+            <div class="calendar-day-header">СР</div>
+            <div class="calendar-day-header">ЧТ</div>
+            <div class="calendar-day-header">ПТ</div>
+            <div class="calendar-day-header">СБ</div>
+            <div class="calendar-day-header">ВС</div>
+            {% for _ in range(1, first_weekday) %}
+            <div class="calendar-day other-month"></div>
+            {% endfor %}
+            {% for day in range(1, days_in_month + 1) %}
+            {% set is_today = day == today.day and month == today.month and year == today.year %}
+            {% set day_homeworks = homeworks | selectattr("lesson_date") | selectattr("lesson_date.day", "eq", day) | selectattr("lesson_date.month", "eq", month) | selectattr("lesson_date.year", "eq", year) | list %}
+            <div class="calendar-day {% if is_today %}today{% endif %} {% if day_homeworks %}has-homework{% endif %}"
+                 data-day="{{ day }}" onclick="selectDay(this, {{ day }})">
+                <div class="calendar-day-number">{{ day }}</div>
+                {% if day_homeworks %}
+                <div class="calendar-event-count">{{ day_homeworks|length }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card" id="hw-form-panel" style="display:none">
+        <div class="card-header">
+            <h3 class="card-title">Оставить домашнее задание</h3>
+        </div>
+        <form method="POST" action="/teacher/homework/create">
+            <div class="form-group">
+                <label>Дата</label>
+                <input type="date" name="date" id="hw-date" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>Класс</label>
+                <select name="class_id" id="hw-class" class="form-control" required>
+                    <option value="">— Выберите —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Предмет</label>
+                <select name="subject_id" id="hw-subject" class="form-control" required>
+                    <option value="">— Выберите —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Описание задания *</label>
+                <textarea name="title" class="form-control" required placeholder="Текст домашнего задания..." rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Примечание (необязательно)</label>
+                <textarea name="description" class="form-control" placeholder="Дополнительные указания..." rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+{% set ns = namespace(has_any=false) %}
+{% for hw in homeworks %}
+{% if hw.lesson_date.month == month and hw.lesson_date.year == year %}
+{% set ns.has_any = true %}
+{% endif %}
+{% endfor %}
+
+{% if ns.has_any %}
+<div class="card" id="hw-list-card">
+    <div class="card-header">
+        <h3 class="card-title">Все задания за месяц</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Дата</th><th>Класс</th><th>Предмет</th><th>Задание</th><th>Примечание</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for hw in homeworks %}
+                {% if hw.lesson_date.month == month and hw.lesson_date.year == year %}
+                <tr class="hw-row" data-day="{{ hw.lesson_date.day }}">
+                    <td style="white-space:nowrap">{{ hw.lesson_date.strftime('%d.%m.%Y') }}</td>
+                    <td>{{ hw.class_.name if hw.class_ else '—' }}</td>
+                    <td>{{ hw.subject.name if hw.subject else '—' }}</td>
+                    <td><strong>{{ hw.title }}</strong></td>
+                    <td style="font-size:0.85rem;color:var(--text-muted)">{{ hw.description or '—' }}</td>
+                    <td style="white-space:nowrap">
+                        <button class="btn btn-outline btn-sm" onclick="editHomework('{{ hw.id }}', '{{ hw.lesson_date.strftime('%Y-%m-%d') }}', '{{ hw.class_.name if hw.class_ else '' }}', '{{ hw.subject.name if hw.subject else '' }}', '{{ hw.title|e }}', '{{ (hw.description or '')|e }}')" title="Редактировать">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <form method="POST" action="/teacher/homework/{{ hw.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить это задание?')">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Удалить">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card" id="hw-day-card" style="display:none">
+    <div class="card-header">
+        <h3 class="card-title">Задания на <span id="hw-day-label"></span></h3>
+        <button class="btn btn-outline btn-sm" onclick="clearDayFilter()">Показать всё</button>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Дата</th><th>Класс</th><th>Предмет</th><th>Задание</th><th>Примечание</th><th></th></tr>
+            </thead>
+            <tbody id="hw-day-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal" id="edit-modal" style="display:none">
+    <div class="modal-overlay" onclick="closeEditModal()"></div>
+    <div class="modal-content" style="max-width:500px">
+        <div class="modal-header">
+            <h3>Редактировать задание</h3>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form method="POST" id="edit-form">
+            <div class="form-group">
+                <label>Дата</label>
+                <input type="date" name="date" id="edit-date" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>Класс</label>
+                <input type="text" id="edit-class" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>Предмет</label>
+                <input type="text" id="edit-subject" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>Описание задания *</label>
+                <textarea name="title" id="edit-title" class="form-control" required rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Примечание</label>
+                <textarea name="description" id="edit-description" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Срок сдачи (необязательно)</label>
+                <input type="date" name="due_date" id="edit-due-date" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="button" class="btn btn-outline" onclick="closeEditModal()" style="margin-left:0.5rem">Отмена</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SCHEDULE_BY_DOW = {{ schedule_by_dow|tojson }};
+const MONTH = {{ month }};
+const YEAR = {{ year }};
+
+function computeDow(day) {
+    const d = new Date(YEAR, MONTH - 1, day);
+    return d.getDay() === 0 ? 7 : d.getDay();
+}
+
+function populateClassDropdown(dow, selectedClassId) {
+    const sel = document.getElementById('hw-class');
+    sel.innerHTML = '<option value="">— Выберите —</option>';
+    const entries = SCHEDULE_BY_DOW[String(dow)] || [];
+    const seen = new Set();
+    for (const e of entries) {
+        if (!seen.has(e.class_id)) {
+            seen.add(e.class_id);
+            const opt = document.createElement('option');
+            opt.value = e.class_id;
+            opt.textContent = e.class_name;
+            if (e.class_id === selectedClassId) opt.selected = true;
+            sel.appendChild(opt);
+        }
+    }
+    sel._entries = entries;
+}
+
+function populateSubjectDropdown(classId) {
+    const sel = document.getElementById('hw-subject');
+    sel.innerHTML = '<option value="">— Выберите —</option>';
+    const classSelect = document.getElementById('hw-class');
+    const entries = classSelect._entries || [];
+    const seen = new Set();
+    for (const e of entries) {
+        if (e.class_id === classId && !seen.has(e.subject_id)) {
+            seen.add(e.subject_id);
+            const opt = document.createElement('option');
+            opt.value = e.subject_id;
+            opt.textContent = e.subject_name;
+            sel.appendChild(opt);
+        }
+    }
+}
+
+document.getElementById('hw-class').addEventListener('change', function() {
+    populateSubjectDropdown(this.value);
+});
+
+function selectDay(el, day) {
+    document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+
+    const dateStr = `${YEAR}-${String(MONTH).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    document.getElementById('hw-date').value = dateStr;
+
+    const dow = computeDow(day);
+    populateClassDropdown(dow);
+    populateSubjectDropdown('');
+
+    document.getElementById('hw-form-panel').style.display = 'block';
+
+    // Filter table rows for this day
+    const rows = document.querySelectorAll('.hw-row');
+    let visibleCount = 0;
+    rows.forEach(r => {
+        if (parseInt(r.dataset.day) === day) {
+            r.style.display = '';
+            visibleCount++;
+        } else {
+            r.style.display = 'none';
+        }
+    });
+
+    const dayCard = document.getElementById('hw-day-card');
+    const dayLabel = document.getElementById('hw-day-label');
+    const dayBody = document.getElementById('hw-day-body');
+    const listCard = document.getElementById('hw-list-card');
+
+    if (visibleCount > 0) {
+        dayLabel.textContent = `${day}.${String(MONTH).padStart(2,'0')}.${YEAR}`;
+        dayBody.innerHTML = '';
+        rows.forEach(r => {
+            if (parseInt(r.dataset.day) === day) {
+                dayBody.appendChild(r.cloneNode(true));
+            }
+        });
+        if (listCard) listCard.style.display = 'none';
+        dayCard.style.display = 'block';
+    } else {
+        if (listCard) listCard.style.display = 'none';
+        dayCard.style.display = 'none';
+    }
+}
+
+function clearDayFilter() {
+    document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+    document.getElementById('hw-form-panel').style.display = 'none';
+    document.getElementById('hw-day-card').style.display = 'none';
+    const listCard = document.getElementById('hw-list-card');
+    if (listCard) listCard.style.display = '';
+    const rows = document.querySelectorAll('.hw-row');
+    rows.forEach(r => r.style.display = '');
+}
+
+function editHomework(id, date, className, subjectName, title, description) {
+    document.getElementById('edit-form').action = `/teacher/homework/${id}/edit`;
+    document.getElementById('edit-date').value = date;
+    document.getElementById('edit-class').value = className;
+    document.getElementById('edit-subject').value = subjectName;
+    document.getElementById('edit-title').value = title;
+    document.getElementById('edit-description').value = description;
+    document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) closeEditModal();
+});
+</script>
+
+<style>
+@media (max-width: 912px) {
+    .calendar-day { min-height: 52px; padding: 0.35rem; font-size: 0.75rem; }
+    .calendar-day-header { font-size: 0.65rem; padding: 0.35rem; }
+    .calendar-event { font-size: 0.6rem; padding: 0.1rem 0.25rem; }
+    .calendar-event-count { width: 16px; height: 16px; font-size: 0.55rem; }
+}
+@media (max-width: 886px) {
+    .calendar-day { min-height: 48px; padding: 0.3rem; font-size: 0.7rem; }
+    .calendar-day-header { font-size: 0.6rem; padding: 0.3rem; }
+    .calendar-event-count { width: 14px; height: 14px; font-size: 0.5rem; }
+}
+@media (max-width: 743px) {
+    .calendar-day { min-height: 44px; padding: 0.25rem; font-size: 0.65rem; }
+    .calendar-day-header { font-size: 0.55rem; padding: 0.25rem; }
+    .calendar-event-count { width: 12px; height: 12px; font-size: 0.45rem; }
+    .grid.grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 492px) {
+    .calendar-day { min-height: 40px; padding: 0.22rem; }
+    .calendar-day-number { font-size: 0.7rem; }
+    .calendar-nav span { font-size: 0.85rem; }
+}
+@media (max-width: 430px) {
+    .grid.grid-2 { grid-template-columns: 1fr; }
+    .calendar-day { min-height: 38px; padding: 0.2rem; font-size: 0.65rem; }
+    .calendar-day-header { font-size: 0.55rem; padding: 0.2rem; }
+    .calendar-nav span { font-size: 0.8rem; }
+    .calendar-event-count { width: 12px; height: 12px; font-size: 0.45rem; top: 1px; right: 1px; }
+    .calender-day-number { font-size: 0.7rem; }
+    #hw-form-panel .form-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 390px) {
+    .calendar-day { min-height: 38px; padding: 0.2rem; font-size: 0.65rem; }
+    .calendar-nav .btn { font-size: 0.6rem; padding: 0.15rem 0.3rem; }
+    .calendar-nav span { font-size: 0.8rem; }
+    .hw-row td { font-size: 0.75rem; }
+    .hw-row .btn { font-size: 0.6rem; padding: 0.15rem 0.3rem; }
+}
+@media (max-width: 375px) {
+    .calendar-day { min-height: 34px; padding: 0.15rem; }
+    .calendar-day-number { font-size: 0.65rem; }
+    .calendar-event-count { width: 12px; height: 12px; font-size: 0.45rem; }
+}
+</style>
+{% endblock %}

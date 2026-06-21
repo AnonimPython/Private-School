@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block page_title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card animate-in">
+        <div class="stat-icon" style="background:var(--blue-50);color:var(--blue-600)">{{ icons.users() }}</div>
+        <div class="stat-value">{{ stats.students }}</div>
+        <div class="stat-label">Учеников</div>
+    </div>
+    <div class="stat-card animate-in" style="animation-delay:0.1s">
+        <div class="stat-icon" style="background:var(--green-50);color:var(--green-700)">{{ icons.users() }}</div>
+        <div class="stat-value">{{ stats.teachers }}</div>
+        <div class="stat-label">Учителей</div>
+    </div>
+    <div class="stat-card animate-in" style="animation-delay:0.2s">
+        <div class="stat-icon" style="background:var(--amber-50);color:var(--amber)">{{ icons.building() }}</div>
+        <div class="stat-value">{{ stats.classes }}</div>
+        <div class="stat-label">Классов</div>
+    </div>
+    <div class="stat-card animate-in" style="animation-delay:0.3s">
+        <div class="stat-icon" style="background:var(--purple-50);color:var(--purple)">{{ icons.book() }}</div>
+        <div class="stat-value">{{ stats.subjects }}</div>
+        <div class="stat-label">Предметов</div>
+    </div>
+    <div class="stat-card animate-in" style="animation-delay:0.4s">
+        <div class="stat-icon" style="background:var(--red-50);color:var(--red)">{{ icons.user() }}</div>
+        <div class="stat-value">{{ stats.attendance }}</div>
+        <div class="stat-label">Пропусков {{ '' if stats.attendance != 1 else '' }}за месяц</div>
+    </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:1rem">
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Распределение оценок</h3></div>
+        <div style="padding:0.75rem">
+            <div class="chart-container" style="height:220px;max-height:220px">
+                <canvas id="gradeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Пользователи по ролям</h3></div>
+        <div style="padding:0.75rem">
+            <div class="chart-container" style="height:220px;max-height:220px">
+                <canvas id="roleChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-3" style="margin-top:1rem">
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Последние оценки</h3></div>
+        <div class="card-body">
+            {% if recent_grades %}
+            <div style="display:flex;flex-direction:column;gap:0.5rem;padding:0.75rem">
+                {% for g in recent_grades %}
+                <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;padding:0.375rem 0;border-bottom:1px solid var(--border)">
+                    {% if g.attendance_status == "absent" %}
+                    <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;font-size:0.8rem;background:var(--red);color:var(--white)">Н</span>
+                    {% elif g.attendance_status == "sick" %}
+                    <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;font-size:0.8rem;background:var(--blue-600);color:var(--white)">Б</span>
+                    {% else %}
+                    <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;font-size:0.8rem;
+                        {% if g.value|int == 5 %}background:var(--green);color:var(--white)
+                        {% elif g.value|int == 4 %}background:var(--blue-600);color:var(--white)
+                        {% elif g.value|int == 3 %}background:var(--amber);color:var(--white)
+                        {% else %}background:var(--red);color:var(--white){% endif %}">{{ g.value|int }}</span>
+                    {% endif %}
+                    <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.student.last_name }} {{ g.student.first_name[0] }}.</span>
+                    <span style="color:var(--text-muted);font-size:0.75rem">{{ g.subject.name[:12] if g.subject else '' }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:var(--text-muted);text-align:center;padding:1rem">Нет оценок</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Последние новости</h3></div>
+        <div class="card-body">
+            {% if recent_news %}
+            <div style="display:flex;flex-direction:column;gap:0.5rem;padding:0.75rem">
+                {% for n in recent_news %}
+                <a href="/news/{{ n.id }}" style="display:block;font-size:0.85rem;padding:0.375rem 0;border-bottom:1px solid var(--border);text-decoration:none;color:var(--text)">
+                    <div style="font-weight:600">{{ n.title[:40] }}{% if n.title|length > 40 %}…{% endif %}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.125rem">
+                        {% if n.news_type == 'holiday' %}{{ icons.star(14) }}{% elif n.news_type == 'announcement' %}{{ icons.megaphone(14) }}{% elif n.news_type == 'event' %}{{ icons.calendar(14) }}{% else %}{{ icons.file_text(14) }}{% endif %}
+                        {{ n.created_at.strftime('%d.%m.%Y') if n.created_at else '' }}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:var(--text-muted);text-align:center;padding:1rem">Нет новостей</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Активность за неделю</h3></div>
+        <div style="padding:0.75rem">
+            <div class="chart-container" style="height:200px;max-height:200px">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <div class="card-header">
+        <h3 class="card-title">Классы по успеваемости</h3>
+        <span style="font-size:0.75rem;color:var(--text-muted)">средний балл</span>
+    </div>
+    <div class="card-body">
+        {% if class_averages %}
+        <div style="display:flex;flex-direction:column;gap:0.25rem;padding:0.5rem">
+            {% for ca in class_averages %}
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:0.375rem 0;border-bottom:1px solid var(--border)">
+                <span style="font-weight:600;min-width:70px;font-size:0.9rem;flex-shrink:0">{{ ca.name }}</span>
+                <div style="flex:1;height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden;min-width:40px">
+                    <div style="height:100%;width:{{ (ca.avg / 5) * 100 }}%;background:{% if ca.avg >= 4 %}var(--green){% elif ca.avg >= 3 %}var(--amber){% else %}var(--red){% endif %};border-radius:4px;transition:width 0.5s"></div>
+                </div>
+                <span style="font-weight:700;font-size:0.9rem;flex-shrink:0">{{ ca.avg }}</span>
+                <span style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0">{{ ca.count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--text-muted);text-align:center;padding:1rem">Нет данных</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <div class="card-header"><h3 class="card-title">Быстрые действия</h3></div>
+    <div class="quick-actions">
+        <a href="/admin/users/create" class="qa-card" style="--qa-color:var(--accent);--qa-bg:var(--blue-50)">
+            <span class="qa-icon">{{ icons.plus() }}</span>
+            <span class="qa-title">Создать пользователя</span>
+            <span class="qa-desc">Добавить учителя, ученика или сотрудника</span>
+        </a>
+        <a href="/admin/classes" class="qa-card" style="--qa-color:#059669;--qa-bg:#d1fae5">
+            <span class="qa-icon">{{ icons.building() }}</span>
+            <span class="qa-title">Классы</span>
+            <span class="qa-desc">Создать классы и сгенерировать логины</span>
+        </a>
+        <a href="/admin/subjects" class="qa-card" style="--qa-color:#d97706;--qa-bg:#fef3c7">
+            <span class="qa-icon">{{ icons.book() }}</span>
+            <span class="qa-title">Предметы</span>
+            <span class="qa-desc">Добавить учебные предметы</span>
+        </a>
+        <a href="/admin/assignments" class="qa-card" style="--qa-color:#7c3aed;--qa-bg:#ede9fe">
+            <span class="qa-icon">{{ icons.clipboard() }}</span>
+            <span class="qa-title">Назначения</span>
+            <span class="qa-desc">Назначить учителей на предметы</span>
+        </a>
+        <a href="/admin/schedule" class="qa-card" style="--qa-color:#0891b2;--qa-bg:#cffafe">
+            <span class="qa-icon">{{ icons.calendar() }}</span>
+            <span class="qa-title">Расписание</span>
+            <span class="qa-desc">Составить расписание занятий</span>
+        </a>
+        <a href="/teacher/homework" class="qa-card" style="--qa-color:#7c3aed;--qa-bg:#ede9fe">
+            <span class="qa-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <span class="qa-title">Домашние задания</span>
+            <span class="qa-desc">Создать задание для класса</span>
+        </a>
+        <a href="/news/create" class="qa-card" style="--qa-color:#dc2626;--qa-bg:#fee2e2">
+            <span class="qa-icon">{{ icons.file_text() }}</span>
+            <span class="qa-title">Новость</span>
+            <span class="qa-desc">Опубликовать новость или объявление</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new Chart(document.getElementById('gradeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ grade_chart_labels | tojson }},
+            datasets: [{
+                data: {{ grade_chart_data | tojson }},
+                backgroundColor: {{ grade_chart_colors | tojson }},
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }
+            },
+            cutout: '60%',
+        }
+    });
+
+    new Chart(document.getElementById('roleChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Ученики', 'Учителя', 'Директор', 'Админ', 'Секретарь'],
+            datasets: [{
+                label: 'Количество',
+                data: [{{ role_counts['student'] }}, {{ role_counts['teacher'] }}, {{ role_counts['director'] }}, {{ role_counts['admin'] }}, {{ role_counts['secretary'] }}],
+                backgroundColor: ['#2563eb', '#22c55e', '#8b5cf6', '#ef4444', '#f59e0b'],
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } },
+                x: { ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('activityChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ activity_labels | tojson }},
+            datasets: [{
+                label: 'Оценок',
+                data: {{ activity_data | tojson }},
+                backgroundColor: '#a855f7',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+                x: { ticks: { font: { size: 9 } } }
+            }
+        }
+    });
+});
+</script>
+<style>
+@media (max-width: 912px) {
+  .quick-actions { grid-template-columns: 1fr 1fr; }
+  .qa-card { padding: 0.75rem; }
+}
+@media (max-width: 886px) {
+  .stats-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .qa-card { padding: 0.7rem; }
+}
+@media (max-width: 743px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .grid.grid-3 { grid-template-columns: 1fr; }
+  .qa-card { padding: 0.65rem; }
+}
+@media (max-width: 492px) {
+  .qa-card { padding: 0.6rem; }
+  .qa-title { font-size: 0.9rem; }
+}
+@media (max-width: 430px) {
+  .quick-actions { grid-template-columns: 1fr; }
+  .qa-card { padding: 0.4rem; }
+  .qa-title { font-size: 0.8rem; }
+  .qa-desc { font-size: 0.65rem; }
+  .chart-container { height: 140px; max-height: 140px; }
+}
+@media (max-width: 390px) {
+  .quick-actions { gap: 0.4rem; }
+  .qa-icon { width: 32px; height: 32px; font-size: 0.9rem; }
+}
+</style>
+{% endblock %}

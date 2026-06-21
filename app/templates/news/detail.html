@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block page_title %}{{ news.title }}{% endblock %}
+
+{% block content %}
+<div class="news-detail-wrapper">
+  <div class="card news-detail-card">
+    <div class="news-detail-hero {{ news.news_type or 'news' }}">
+      <div class="news-detail-hero-inner">
+        {% if news.news_type %}
+        <span class="news-type-badge {{ news.news_type }}">
+          {% if news.news_type == 'holiday' %}{{ icons.calendar() }} Каникулы
+          {% elif news.news_type == 'announcement' %}{{ icons.megaphone() }} Объявление
+          {% elif news.news_type == 'event' %}{{ icons.star() }} Событие
+          {% else %}{{ icons.file_text() }} Новость{% endif %}
+        </span>
+        {% endif %}
+        <h1 class="news-detail-title">{{ news.title }}</h1>
+        <div class="news-detail-meta">
+          <span class="news-detail-author">
+            <span class="author-avatar">{{ (news.author.first_name[0] if news.author else '?') ~ (news.author.last_name[0] if news.author else '') }}</span>
+            {{ news.author.first_name if news.author else '' }} {{ news.author.last_name if news.author else '' }}
+          </span>
+          <span class="meta-sep">·</span>
+          <span>{{ news.created_at.strftime('%d.%m.%Y %H:%M') if news.created_at else '' }}</span>
+          {% if news.start_date and news.end_date %}
+          <span class="meta-sep">·</span>
+          <span>{{ icons.calendar(14) }} {{ news.start_date.strftime('%d.%m') }} — {{ news.end_date.strftime('%d.%m.%Y') }}</span>
+          {% elif news.start_date %}
+          <span class="meta-sep">·</span>
+          <span>{{ icons.calendar(14) }} {{ news.start_date.strftime('%d.%m.%Y') }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="news-detail-body">
+      {% if news.content %}
+      <div class="news-detail-content">{{ news.content }}</div>
+      {% else %}
+      <p class="text-muted" style="text-align:center;padding:2rem 0">Нет содержимого</p>
+      {% endif %}
+    </div>
+
+    <div class="news-detail-footer">
+      <div class="news-detail-actions">
+        {% if user and user.role in ('director', 'admin', 'teacher') %}
+        <a href="/news/{{ news.id }}/edit" class="btn btn-outline btn-sm">{{ icons.edit(14) }} Редактировать</a>
+        <form method="POST" action="/news/{{ news.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить новость?')">
+          <button type="submit" class="btn btn-danger btn-sm">{{ icons.trash(14) }} Удалить</button>
+        </form>
+        {% endif %}
+      </div>
+      <a href="/news" class="back-link">← Все новости</a>
+    </div>
+  </div>
+</div>
+<style>
+@media (max-width: 886px) {
+  .news-detail-hero-inner { padding: 1rem; }
+  .news-detail-title { font-size: 1.4rem; }
+  .news-detail-content { font-size: 0.95rem; }
+}
+@media (max-width: 743px) {
+  .news-detail-card { margin: 0; border-radius: 0; }
+  .news-detail-meta { font-size: 0.8rem; flex-wrap: wrap; }
+}
+@media (max-width: 492px) {
+  .news-detail-hero-inner { padding: 0.75rem; }
+  .news-detail-title { font-size: 1.15rem; }
+  .news-detail-content { font-size: 0.85rem; }
+}
+@media (max-width: 430px) {
+  .news-detail-hero-inner { padding: 0.4rem; }
+  .news-detail-title { font-size: 1.1rem; }
+  .news-detail-meta { font-size: 0.7rem; flex-wrap: wrap; }
+  .news-detail-actions { flex-direction: column; gap: 0.35rem; }
+  .news-detail-actions .btn { width: 100%; justify-content: center; font-size: 0.65rem; padding: 0.3rem 0.45rem; }
+}
+@media (max-width: 390px) {
+  .news-detail-content { font-size: 0.8rem; }
+}
+</style>
+{% endblock %}

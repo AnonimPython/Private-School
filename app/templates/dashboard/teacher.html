@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block page_title %}Панель учителя{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card animate-in">
+        <div class="stat-icon" style="background:var(--blue-50);color:var(--blue-600)">{{ icons.building() }}</div>
+        <div class="stat-value">{{ classes|length }}</div>
+        <div class="stat-label">Мои классы</div>
+    </div>
+    <div class="stat-card animate-in" style="animation-delay:0.1s">
+        <div class="stat-icon" style="background:var(--green-50);color:var(--green-700)">{{ icons.book() }}</div>
+        <div class="stat-value">{{ classes|map(attribute='subjects')|list|length }}</div>
+        <div class="stat-label">Предметов</div>
+    </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:1rem">
+    {% for item in classes %}
+    <div class="card animate-in">
+        <div class="card-header">
+            <h3 class="card-title">{{ item.class.name }}</h3>
+            <span class="text-muted">{{ item.class.grade_level }} класс</span>
+        </div>
+        <div style="margin-bottom:1rem">
+            <span class="text-muted">Классный руководитель: </span>
+            {% if item.class.homeroom_teacher %}
+                {{ item.class.homeroom_teacher.last_name }} {{ item.class.homeroom_teacher.first_name }}
+            {% else %}
+                не назначен
+            {% endif %}
+        </div>
+        <div class="btn-group">
+            {% for subj in item.subjects %}
+            <a href="/teacher/class/{{ item.class.id }}/subject/{{ subj.id }}" class="btn btn-outline btn-sm">
+                {{ icons.book(14) }} {{ subj.name }}
+            </a>
+            {% endfor %}
+            <a href="/teacher/analytics/{{ item.class.id }}/{{ item.subjects[0].id if item.subjects else '' }}" class="btn btn-outline btn-sm">
+                {{ icons.bar_chart(14) }} Аналитика
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <p>У вас пока нет назначенных классов</p>
+            <a href="/admin/assignments" class="btn btn-primary mt-2">Перейти к назначениям</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<style>
+@media (max-width: 886px) {
+  .stat-card { padding: 0.85rem; }
+  .btn-group .btn { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
+}
+@media (max-width: 743px) {
+  .stat-card { padding: 0.7rem; }
+}
+@media (max-width: 492px) {
+  .stat-card { padding: 0.6rem; }
+  .btn-group .btn { font-size: 0.78rem; padding: 0.28rem 0.5rem; }
+}
+@media (max-width: 430px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  .stat-card { padding: 0.4rem; }
+  .btn-group .btn { font-size: 0.65rem; padding: 0.2rem 0.35rem; }
+}
+</style>
+{% endblock %}

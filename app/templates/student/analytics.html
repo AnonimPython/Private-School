@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block page_title %}Моя успеваемость{% endblock %}
+
+{% block content %}
+<div style="max-width:960px;margin:0 auto">
+  <div class="stats-grid">
+    <div class="stat-card animate-in">
+      <div class="stat-icon" style="background:var(--blue-50);color:var(--blue-600)">{{ icons.bar_chart(20) }}</div>
+      <div class="stat-value">{{ overall_avg }}</div>
+      <div class="stat-label">Общий средний балл</div>
+    </div>
+    <div class="stat-card animate-in" style="animation-delay:0.1s">
+      <div class="stat-icon" style="background:var(--amber-50);color:var(--amber)">{{ icons.trophy(20) }}</div>
+      <div class="stat-value">{{ radar_labels|length }}</div>
+      <div class="stat-label">Предметов</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:1rem">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Динамика успеваемости</h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="timelineChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">По предметам</h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="subjectsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem">
+    <div class="card-header">
+      <h3 class="card-title">Детализация по предметам</h3>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Предмет</th><th>Средний балл</th><th>Оценок</th></tr></thead>
+        <tbody>
+          {% for i in range(radar_labels|length) %}
+          <tr>
+            <td>{{ radar_labels[i] }}</td>
+            <td><span class="grade-value grade-{{ radar_values[i]|int }}">{{ radar_values[i] }}</span></td>
+            <td style="font-size:0.85rem;color:var(--text-muted)">{{ subject_grades_count[i] if subject_grades_count else '' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3"><div class="empty-state">Нет данных</div></td></tr>
+          {% endfor %}
+          {% if radar_labels %}
+          <tr style="font-weight:700">
+            <td>Общий</td>
+            <td><span class="grade-value grade-{{ overall_avg|int }}">{{ overall_avg }}</span></td>
+            <td></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var chartColor = isDark ? '#60a5fa' : '#3b82f6';
+    var chartBg = isDark ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.1)';
+    var chartBgBar = isDark ? 'rgba(96, 165, 250, 0.6)' : 'rgba(59, 130, 246, 0.6)';
+
+    const timelineCtx = document.getElementById('timelineChart');
+    if (timelineCtx && {{ chart_labels|length }} > 0) {
+        new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: [{% for l in chart_labels %}'{{ l }}',{% endfor %}],
+                datasets: [{
+                    label: 'Средний балл',
+                    data: [{% for v in chart_values %}{{ v }},{% endfor %}],
+                    borderColor: chartColor,
+                    backgroundColor: chartBg,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: chartColor,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    const subjectsCtx = document.getElementById('subjectsChart');
+    if (subjectsCtx && {{ radar_labels|length }} > 0) {
+        new Chart(subjectsCtx, {
+            type: 'bar',
+            data: {
+                labels: [{% for l in radar_labels %}'{{ l }}',{% endfor %}],
+                datasets: [{
+                    label: 'Средний балл',
+                    data: [{% for v in radar_values %}{{ v }},{% endfor %}],
+                    backgroundColor: chartBgBar,
+                    borderColor: chartColor,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
+<style>
+@media (max-width: 912px) {
+  .chart-container { height: 220px; max-height: 220px; }
+}
+@media (max-width: 886px) {
+  .chart-container { height: 200px; max-height: 200px; }
+  .stat-card { padding: 0.75rem; }
+}
+@media (max-width: 743px) {
+  .chart-container { height: 190px; max-height: 190px; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 492px) {
+  .chart-container { height: 185px; max-height: 185px; }
+  .stats-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+  .stat-value { font-size: 1.25rem; }
+}
+@media (max-width: 430px) {
+  .chart-container { height: 180px; max-height: 180px; }
+}
+@media (max-width: 390px) {
+  .chart-container { height: 150px; max-height: 150px; }
+}
+</style>
+{% endblock %}

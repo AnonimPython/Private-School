@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+<!--/ users.html — Список всех пользователей с фильтрацией по ролям / List of all users with role-based filtering -->
+{% block page_title %}Пользователи{% endblock %}
+
+{% block content %}
+<!--/ ===== Фильтры по ролям и кнопка создания / Role filters and create button ===== -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Все пользователи</h3>
+        <div class="btn-group">
+            <a href="/admin/users?role_filter=" class="btn btn-sm {% if not role_filter %}btn-primary{% else %}btn-outline{% endif %}">Все</a>
+            <a href="/admin/users?role_filter=student" class="btn btn-sm {% if role_filter == 'student' %}btn-primary{% else %}btn-outline{% endif %}">Ученики</a>
+            <a href="/admin/users?role_filter=teacher" class="btn btn-sm {% if role_filter == 'teacher' %}btn-primary{% else %}btn-outline{% endif %}">Учителя</a>
+            <a href="/admin/users?role_filter=admin" class="btn btn-sm {% if role_filter == 'admin' %}btn-primary{% else %}btn-outline{% endif %}">Админы</a>
+            <a href="/admin/users/create" class="btn btn-primary btn-sm">{{ icons.plus() }} Создать</a>
+        </div>
+    </div>
+    <!--? ===== Поиск по пользователям / User search input ===== -->
+    <div style="padding:0 1.25rem 0.75rem">
+        <input type="text" id="userSearch" class="form-control" placeholder="Поиск по имени, email или роли..." oninput="filterUsers(this.value)">
+    </div>
+    <!--/ ===== Таблица пользователей / Users table ===== -->
+    <div class="table-wrapper">
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>ФИО</th>
+                    <th>Логин / Email</th>
+                    <th>Роль</th>
+                    <th>Телефон</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.last_name }} {{ u.first_name }} {{ u.middle_name or '' }}</strong></td>
+                    <td>{% if u.role == 'student' %}{{ u.username or u.email }}{% else %}{{ u.email }}{% endif %}</td>
+                    <td>
+                        {% if u.role == 'director' %}{{ icons.crown() }} Директор
+                        {% elif u.role == 'admin' %}{{ icons.shield() }} Админ
+                        {% elif u.role == 'teacher' %}{{ icons.users() }} Учитель
+                        {% elif u.role == 'student' %}{{ icons.user() }} Ученик
+                        {% endif %}
+                    </td>
+                    <td>{{ u.phone or '—' }}</td>
+                    <td>{% if u.is_active %}{{ icons.check() }} Активен{% else %}{{ icons.x_mark() }} Неактивен{% endif %}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="/admin/users/{{ u.id }}/edit" class="btn btn-outline btn-sm">{{ icons.edit() }}</a>
+                            {% if u.role != 'director' %}
+                            <form method="POST" action="/admin/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить пользователя?')">
+                                <button type="submit" class="btn btn-danger btn-sm">{{ icons.trash() }}</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6"><div class="empty-state">Нет пользователей</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+function filterUsers(query) {
+    const q = query.toLowerCase();
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+}
+</script>
+<!--/ ===== Адаптивные стили / Responsive styles ===== -->
+<style>
+@media (max-width: 912px) {
+  .card-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .card-header .btn-group { width: 100%; }
+}
+@media (max-width: 886px) {
+  .table-wrapper td { font-size: 0.8rem; padding: 0.4rem 0.5rem; }
+  .card-header .btn-group .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+}
+@media (max-width: 743px) {
+  .table-wrapper td { font-size: 0.75rem; padding: 0.35rem 0.4rem; }
+  .table-wrapper td strong { font-size: 0.8rem; }
+}
+@media (max-width: 492px) {
+  .card-header .btn-group .btn { font-size: 0.65rem; padding: 0.2rem 0.35rem; }
+  .table-wrapper td { font-size: 0.7rem; padding: 0.3rem 0.35rem; }
+}
+@media (max-width: 430px) {
+  .table-wrapper td { font-size: 0.65rem; padding: 0.25rem 0.3rem; }
+  .table-wrapper td strong { font-size: 0.7rem; }
+}
+@media (max-width: 390px) {
+  .form-control[placeholder*="Поиск"] { font-size: 0.75rem; padding: 0.3rem 0.4rem; }
+}
+</style>
+{% endblock %}

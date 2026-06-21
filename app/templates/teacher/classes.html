@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block page_title %}Мои классы{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    {% for item in classes %}
+    <div class="card animate-in">
+        <div class="card-header">
+            <h3 class="card-title">{{ item.class.name }}</h3>
+            <span class="text-muted">{{ item.class.grade_level }} класс</span>
+        </div>
+        <p class="text-muted mb-2">Учебный год: {{ item.class.academic_year }}</p>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+            {% for subj in item.subjects %}
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <span style="flex:1;font-weight:500">{{ subj.subject.name }}</span>
+                <a href="/teacher/class/{{ item.class.id }}/subject/{{ subj.subject.id }}" class="btn btn-primary btn-sm">{{ icons.bar_chart(14) }} Оценки</a>
+                <a href="/teacher/analytics/{{ item.class.id }}/{{ subj.subject.id }}" class="btn btn-outline btn-sm">{{ icons.trending_up(14) }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+            <a href="/teacher/class/{{ item.class.id }}" class="btn btn-outline btn-sm">{{ icons.users(14) }} Ученики</a>
+            <a href="/teacher/schedule" class="btn btn-outline btn-sm">{{ icons.calendar(14) }} Расписание</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <p>У вас пока нет назначенных классов</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<style>
+@media (max-width: 886px) {
+  .btn { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
+}
+@media (max-width: 743px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  .btn { font-size: 0.7rem; padding: 0.2rem 0.4rem; }
+}
+@media (max-width: 492px) {
+  .card-header .card-title { font-size: 0.9rem; }
+  .btn { font-size: 0.65rem; padding: 0.15rem 0.35rem; }
+}
+@media (max-width: 430px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  .card-header .card-title { font-size: 0.85rem; }
+  .btn { font-size: 0.65rem; padding: 0.3rem 0.45rem; }
+}
+@media (max-width: 390px) {
+  .btn-group .btn { font-size: 0.7rem; padding: 0.2rem 0.4rem; }
+}
+</style>
+{% endblock %}
+
+
+

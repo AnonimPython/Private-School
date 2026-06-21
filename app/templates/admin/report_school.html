@@ -1,0 +1,96 @@
+<!--/ ──────────────────────────────────────────────────────────────
+    School performance report / Отчёт об успеваемости школы
+    Shows average grades across all classes and subjects
+    Показывает средние оценки по всем классам и предметам
+───────────────────────────────────────────────────────────────── -->
+{% extends "base.html" %}
+{% block page_title %}Отчёт об успеваемости школы{% endblock %}
+{% block content %}
+<div class="report-container">
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">Общая успеваемость школы</h3>
+      <button class="btn btn-success btn-sm" onclick="window.print()">{{ icons.printer() }} Распечатать</button>
+    </div>
+    {% if school_average %}
+    <div class="report-school-avg">
+      <span class="report-avg-value">{{ school_average }}</span>
+      <span class="report-avg-label">Средний балл по школе</span>
+    </div>
+    {% else %}
+    <div class="empty-state">Нет данных для отображения</div>
+    {% endif %}
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">По классам</h3>
+    </div>
+    <div class="table-wrapper">
+      <table class="report-table">
+        <thead>
+          <tr><th>Класс</th><th>Учеников</th><th>Средний балл</th><th>Оценок</th><th>Пропусков (Н)</th><th>Болезней (Б)</th></tr>
+        </thead>
+        <tbody>
+          {% for cs in class_stats %}
+          <tr>
+            <td><strong>{{ cs.class.name }}</strong></td>
+            <td>{{ cs.student_count }}</td>
+            <td>
+              {% if cs.average %}
+              <span class="grade-badge grade-badge-{{ 'good' if cs.average >= 4 else 'mid' if cs.average >= 3 else 'bad' }}">{{ cs.average }}</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>{{ cs.grade_count }}</td>
+            <td>{{ cs.absent }}</td>
+            <td>{{ cs.sick }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty-state">Нет классов</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">По предметам</h3>
+    </div>
+    <div class="table-wrapper">
+      <table class="report-table">
+        <thead><tr><th>Предмет</th><th>Средний балл</th></tr></thead>
+        <tbody>
+          {% for ss in subject_stats %}
+          <tr>
+            <td>{{ ss.subject.name }}</td>
+            <td>
+              {% if ss.average %}
+              <span class="grade-badge grade-badge-{{ 'good' if ss.average >= 4 else 'mid' if ss.average >= 3 else 'bad' }}">{{ ss.average }}</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2"><div class="empty-state">Нет предметов</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<style>
+.report-school-avg { text-align: center; padding: 2rem 1rem; }
+.report-avg-value { display: block; font-size: 3rem; font-weight: 800; color: var(--primary, #4361ee); line-height: 1; }
+.report-avg-label { display: block; font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem; }
+.report-table td, .report-table th { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+.grade-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 1rem; font-weight: 700; font-size: 0.85rem; }
+.grade-badge-good { background: var(--green-50); color: var(--green-700); }
+.grade-badge-mid { background: var(--amber-50); color: var(--amber); }
+.grade-badge-bad { background: var(--red-50); color: var(--red-700); }
+@media print { .sidebar, .top-bar, .menu-toggle, .sidebar-overlay, .mobile-bottom-nav, .sidebar-footer, .theme-toggle { display: none !important; } .main-content { margin-left: 0 !important; padding-bottom: 0 !important; } .report-school-avg { padding: 1rem; } body { padding-bottom: 0; } }
+@media (max-width: 886px) { .report-table td, .report-table th { font-size: 0.8rem; padding: 0.4rem 0.5rem; } }
+@media (max-width: 743px) { .report-table td, .report-table th { font-size: 0.75rem; padding: 0.35rem 0.4rem; } .report-avg-value { font-size: 2.5rem; } }
+@media (max-width: 492px) { .report-table td, .report-table th { font-size: 0.7rem; padding: 0.3rem; } .report-avg-value { font-size: 2rem; } }
+@media (max-width: 430px) { .report-table td, .report-table th { font-size: 0.65rem; padding: 0.25rem; } .report-school-avg { padding: 0.75rem; } .report-avg-value { font-size: 1.75rem; } }
+</style>
+{% endblock %}

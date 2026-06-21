@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+<!--* create_student.html — Форма создания нового ученика с личными данными / New student creation form with personal data -->
+{% block page_title %}Создание ученика{% endblock %}
+
+{% block content %}
+<!--/ ===== Карточка создания ученика / Student creation card ===== -->
+<div class="card" style="max-width:720px;margin:0 auto">
+    <div class="card-header">
+        <h3 class="card-title">Новый ученик</h3>
+    </div>
+    <!--! ===== Блок ошибок / Error block ===== -->
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+        <!--? ===== Логин генерируется автоматически / Login is auto-generated ===== -->
+        <div class="form-group">
+            <label>Логин и пароль</label>
+            <input type="text" class="form-control" value="генерируется автоматически" disabled style="color:var(--text-muted)">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Фамилия *</label>
+                <input type="text" name="last_name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Имя *</label>
+                <input type="text" name="first_name" class="form-control" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Отчество</label>
+                <input type="text" name="middle_name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Телефон</label>
+                <input type="text" name="phone" class="form-control" placeholder="+7 (999) 123-45-67">
+            </div>
+        </div>
+
+        <!--/ ===== Личные данные / Personal data ===== -->
+        <h4 style="margin:1.25rem 0 0.75rem;color:var(--accent)">Личные данные</h4>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Дата рождения</label>
+                <input type="date" name="date_of_birth" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Адрес проживания</label>
+                <input type="text" name="address" class="form-control" placeholder="г. Москва, ул. Школьная, д. 1">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>ФИО мамы</label>
+                <input type="text" name="mother_name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Телефон мамы</label>
+                <input type="text" name="mother_phone" class="form-control" placeholder="+7 (999) 123-45-67">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>ФИО папы</label>
+                <input type="text" name="father_name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Телефон папы</label>
+                <input type="text" name="father_phone" class="form-control" placeholder="+7 (999) 123-45-67">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Экстренный контакт</label>
+            <input type="text" name="emergency_contact" class="form-control" placeholder="Имя и телефон для экстренной связи">
+        </div>
+        <!--! ===== Медицинская информация / Medical info ===== -->
+        <div class="form-group">
+            <label>Медицинская информация</label>
+            <textarea name="medical_info" class="form-control" placeholder="Аллергии, хронические заболевания..."></textarea>
+        </div>
+
+        <!--* ===== Кнопки отправки / Submit buttons ===== -->
+        <div class="btn-group" style="margin-top:1rem">
+            <button type="submit" class="btn btn-primary">Создать ученика</button>
+            <a href="/admin/users" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+<style>
+@media (max-width: 912px) {
+  .form-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 886px) {
+  .form-row { gap: 0.75rem; }
+}
+@media (max-width: 743px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 492px) {
+  .form-row .btn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+  h4 { font-size: 0.9rem; }
+}
+@media (max-width: 430px) {
+  .card[style*="max-width:720px"] { max-width: 100% !important; }
+  .form-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  h4 { font-size: 0.85rem; }
+}
+@media (max-width: 390px) {
+  .btn-group .btn { font-size: 0.8rem; padding: 0.35rem 0.75rem; }
+}
+</style>
+{% endblock %}

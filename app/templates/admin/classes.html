@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+<!--/ classes.html — Управление классами: создание, редактирование, список / Class management: create, edit, list -->
+{% block page_title %}Классы{% endblock %}
+
+{% block content %}
+<!--* ===== Форма создания класса / Class creation form ===== -->
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title">Создать класс</h3>
+    </div>
+    <form method="POST" action="/admin/classes/create" class="form-row" style="align-items:end">
+        <div class="form-group">
+            <label>Название</label>
+            <input type="text" name="name" class="form-control" placeholder="10А" required>
+        </div>
+        <div class="form-group">
+            <label>Класс</label>
+            <select name="grade_level" class="form-control">
+                {% for i in range(1, 12) %}
+                <option value="{{ i }}">{{ i }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Классный руководитель</label>
+            <input type="text" class="form-control" placeholder="Введите фамилию или имя" data-autocomplete="teacher" data-hidden-id="homeroomCreateId" autocomplete="off">
+            <input type="hidden" name="homeroom_teacher_id" id="homeroomCreateId">
+        </div>
+        <div class="form-group">
+            <label>Учебный год</label>
+            <input type="text" name="academic_year" class="form-control" value="2024/2025">
+        </div>
+        <button type="submit" class="btn btn-primary">Создать</button>
+    </form>
+</div>
+
+<!--/ ===== Список классов / Classes list ===== -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Все классы</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Класс</th>
+                    <th>Кл. руководитель</th>
+                    <th>Учебный год</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in classes %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>{{ c.grade_level }}</td>
+                    <td>{{ c.homeroom_teacher.last_name if c.homeroom_teacher else '—' }}</td>
+                    <td>{{ c.academic_year }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="/teacher/class/{{ c.id }}" class="btn btn-outline btn-sm">{{ icons.bar_chart() }}</a>
+                            <button class="btn btn-outline btn-sm" data-modal="editClass{{ c.id|replace('-','_') }}">{{ icons.edit() }}</button>
+                            <button class="btn btn-outline btn-sm" data-modal="studentsClass{{ c.id|replace('-','_') }}">{{ icons.users() }}</button>
+                            <form method="POST" action="/admin/classes/{{ c.id }}/generate-credentials" style="display:inline" onsubmit="return confirm('Сгенерировать логины и пароли для всех учеников класса?')">
+                                <button type="submit" class="btn btn-outline btn-sm">{{ icons.key() }} Сгенерировать логины</button>
+                            </form>
+                            <button class="btn btn-outline btn-sm" data-export-docx data-class-id="{{ c.id }}">{{ icons.file() }} DOCX</button>
+                            <form method="POST" action="/admin/classes/{{ c.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить класс?')">
+                                <button type="submit" class="btn btn-danger btn-sm">{{ icons.trash() }}</button>
+                            </form>
+                        </div>
+
+                        <!--* ===== Модальное окно: редактирование класса / Modal: Edit class ===== -->
+                        <!-- Modal: Edit class -->
+                        <div class="modal" id="editClass{{ c.id|replace('-','_') }}">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3>Редактировать {{ c.name }}</h3>
+                                    <button class="modal-close">&times;</button>
+                                </div>
+                                <form method="POST" action="/admin/classes/{{ c.id }}/edit">
+                                    <div class="form-group">
+                                        <label>Название</label>
+                                        <input type="text" name="name" class="form-control" value="{{ c.name }}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Класс</label>
+                                        <select name="grade_level" class="form-control">
+                                            {% for i in range(1, 12) %}
+                                            <option value="{{ i }}" {% if c.grade_level == i %}selected{% endif %}>{{ i }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Кл. руководитель</label>
+                                        <input type="text" class="form-control" placeholder="Введите фамилию или имя" data-autocomplete="teacher" data-hidden-id="homeroomEdit{{ loop.index }}" autocomplete="off" value="{{ c.homeroom_teacher.last_name ~ ' ' ~ c.homeroom_teacher.first_name if c.homeroom_teacher else '' }}">
+                                        <input type="hidden" name="homeroom_teacher_id" id="homeroomEdit{{ loop.index }}" value="{{ c.homeroom_teacher_id if c.homeroom_teacher_id else '' }}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Учебный год</label>
+                                        <input type="text" name="academic_year" class="form-control" value="{{ c.academic_year }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!--? ===== Модальное окно: список учеников / Modal: Students in class ===== -->
+                        <!-- Modal: Students in class -->
+                        <div class="modal" id="studentsClass{{ c.id|replace('-','_') }}">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3>Ученики {{ c.name }}</h3>
+                                    <button class="modal-close">&times;</button>
+                                </div>
+                                <p class="text-muted mb-2">Здесь будут отображаться ученики класса после добавления.</p>
+                                <form method="POST" action="/admin/classes/{{ c.id }}/generate-credentials" onsubmit="return confirm('Сгенерировать логины и пароли для всех учеников класса?')">
+                                    <button type="submit" class="btn btn-primary">{{ icons.key() }} Сгенерировать логины и пароли</button>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5"><div class="empty-state">Классов пока нет</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<style>
+@media (max-width: 912px) {
+  .form-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 886px) {
+  .form-row { gap: 0.75rem; }
+  .btn { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+}
+@media (max-width: 743px) {
+  .form-row { grid-template-columns: 1fr; }
+  .btn { width: 100%; }
+  td { font-size: 0.8rem; }
+}
+@media (max-width: 492px) {
+  .card { padding: 0.625rem; }
+  .btn { font-size: 0.7rem; }
+  td { font-size: 0.75rem; }
+}
+@media (max-width: 430px) {
+  .form-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  .form-row .btn { width: 100%; }
+  td { font-size: 0.65rem; }
+  .btn { font-size: 0.65rem; padding: 0.25rem 0.4rem; }
+}
+</style>
+<!--/ ===== Конец classes.html / End classes.html ===== -->
+{% endblock %}

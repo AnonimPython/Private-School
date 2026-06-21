@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+<!--/ user_form.html — Универсальная форма создания/редактирования пользователя / Universal user create/edit form -->
+{% block page_title %}{% if edit %}Редактировать{% else %}Создать{% endif %} пользователя{% endblock %}
+
+{% block content %}
+<!--/ ===== Карточка пользователя / User form card ===== -->
+<div class="card" style="max-width:720px;margin:0 auto">
+    <div class="card-header">
+        <h3 class="card-title">{% if edit %}Редактирование: {{ target.last_name }} {{ target.first_name }}{% else %}Создание пользователя{% endif %}</h3>
+    </div>
+    <!--! ===== Блок ошибок / Error block ===== -->
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="{% if edit %}/admin/users/{{ target.id }}/edit{% else %}/admin/users/create{% endif %}">
+        <!--/ ===== Основные данные / Basic info ===== -->
+        <h4 style="margin-bottom:1rem;color:var(--accent)">Основные данные</h4>
+        <div class="form-row">
+            <div class="form-group">
+                {% if edit and target.role == 'student' %}
+                <label>Логин</label>
+                <div class="form-control-static">{{ target.username }}</div>
+                <input type="hidden" name="email" value="{{ target.email }}">
+                {% else %}
+                <label>Email</label>
+                {% if edit %}
+                <div class="form-control-static">{{ target.email }}</div>
+                <input type="hidden" name="email" value="{{ target.email }}">
+                {% else %}
+                <input type="email" name="email" class="form-control" required>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label>Пароль {% if edit %}(оставьте пустым, чтобы не менять){% endif %}</label>
+                <input type="password" name="password" class="form-control" {% if not edit %}required{% endif %}>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Фамилия *</label>
+                <input type="text" name="last_name" class="form-control" value="{{ target.last_name if edit else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label>Имя *</label>
+                <input type="text" name="first_name" class="form-control" value="{{ target.first_name if edit else '' }}" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Отчество</label>
+                <input type="text" name="middle_name" class="form-control" value="{{ target.middle_name if edit else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Роль</label>
+                <select name="role" class="form-control" {% if edit %}disabled{% endif %}>
+                    <option value="student" {% if edit and target.role == 'student' %}selected{% endif %}>Ученик</option>
+                    <option value="teacher" {% if edit and target.role == 'teacher' %}selected{% endif %}>Учитель</option>
+                    <option value="admin" {% if edit and target.role == 'admin' %}selected{% endif %}>Администратор</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Телефон</label>
+            <input type="text" name="phone" class="form-control" value="{{ target.phone if edit else '' }}" placeholder="+7 (999) 123-45-67">
+        </div>
+
+        <!--/ ===== Профессиональные данные учителя / Teacher professional fields ===== -->
+        <div id="teacher-fields" style="display:{% if edit and target.role == 'teacher' %}block{% else %}none{% endif %}">
+            <h4 style="margin:1.5rem 0 1rem;color:var(--accent)">Профессиональные данные (для учителя)</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Номер трудовой книжки</label>
+                    <input type="text" name="labor_book_number" class="form-control" value="{{ target.labor_book_number if edit else '' }}" placeholder="ТК-1234567">
+                </div>
+                <div class="form-group">
+                    <label>Стаж работы (лет)</label>
+                    <input type="number" name="experience_years" class="form-control" value="{{ target.experience_years if edit else '' }}" min="0" max="70">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Зарплата (руб/мес)</label>
+                    <input type="number" name="salary_monthly" class="form-control" value="{{ target.salary_monthly if edit else '' }}" min="0" step="0.01" placeholder="50000">
+                </div>
+                <div class="form-group">
+                    <label>Часов в неделю</label>
+                    <input type="number" name="hours_per_week" class="form-control" value="{{ target.hours_per_week if edit else '' }}" min="0" step="0.5" placeholder="40">
+                </div>
+            </div>
+        </div>
+
+        <!--/ ===== Личные данные ученика / Student personal fields ===== -->
+        <h4 style="margin:1.5rem 0 1rem;color:var(--accent)">Личные данные (для ученика)</h4>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Дата рождения</label>
+                <input type="date" name="date_of_birth" class="form-control" value="{{ target.date_of_birth.strftime('%Y-%m-%d') if edit and target.date_of_birth else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Адрес проживания</label>
+                <input type="text" name="address" class="form-control" value="{{ target.address if edit else '' }}" placeholder="г. Москва, ул. Школьная, д. 1">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>ФИО мамы</label>
+                <input type="text" name="mother_name" class="form-control" value="{{ target.mother_name if edit else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Телефон мамы</label>
+                <input type="text" name="mother_phone" class="form-control" value="{{ target.mother_phone if edit else '' }}" placeholder="+7 (999) 123-45-67">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>ФИО папы</label>
+                <input type="text" name="father_name" class="form-control" value="{{ target.father_name if edit else '' }}">
+            </div>
+            <div class="form-group">
+                <label>Телефон папы</label>
+                <input type="text" name="father_phone" class="form-control" value="{{ target.father_phone if edit else '' }}" placeholder="+7 (999) 123-45-67">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Экстренный контакт</label>
+            <input type="text" name="emergency_contact" class="form-control" value="{{ target.emergency_contact if edit else '' }}" placeholder="Имя и телефон для экстренной связи">
+        </div>
+        <div class="form-group">
+            <label>Медицинская информация</label>
+            <textarea name="medical_info" class="form-control" placeholder="Аллергии, хронические заболевания...">{{ target.medical_info if edit else '' }}</textarea>
+        </div>
+
+        {% if edit %}
+        <!--/ ===== Статус активности / Active status toggle ===== -->
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+                <input type="checkbox" name="is_active" {% if target.is_active %}checked{% endif %}>
+                Активен
+            </label>
+        </div>
+        {% endif %}
+
+        <!--* ===== Кнопки отправки / Submit buttons ===== -->
+        <div class="btn-group" style="margin-top:1rem">
+            <button type="submit" class="btn btn-primary">{% if edit %}Сохранить{% else %}Создать{% endif %}</button>
+            <a href="/admin/users" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+<style>
+@media (max-width: 912px) {
+  .form-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 886px) {
+  .form-row { gap: 0.75rem; }
+  .form-control-static { font-size: 0.9rem; }
+}
+@media (max-width: 743px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 492px) {
+  .form-row .btn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+  h4 { font-size: 0.95rem; }
+}
+@media (max-width: 430px) {
+  .card[style*="max-width:720px"] { max-width: 100% !important; }
+  .form-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  .form-control-static { font-size: 0.75rem; }
+}
+@media (max-width: 390px) {
+  h4 { font-size: 0.9rem; }
+}
+</style>
+{% endblock %}

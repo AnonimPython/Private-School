@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+<!--/ schedule.html — Управление расписанием уроков по классам / Lesson schedule management per class -->
+{% block page_title %}Управление расписанием{% endblock %}
+
+{% block content %}
+<!--/ ===== Выбор класса / Class selection ===== -->
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title">Выберите класс</h3>
+    </div>
+    <div class="btn-group">
+        {% for c in classes %}
+        <a href="/admin/schedule?class_id={{ c.id }}" class="btn {% if selected_class_id == c.id|string %}btn-primary{% else %}btn-outline{% endif %}">
+            {{ c.name }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% if selected_class_id %}
+<!--* ===== Форма добавления урока / Add lesson form ===== -->
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title">Добавить урок</h3>
+    </div>
+    <form method="POST" action="/admin/schedule/add" class="form-row" style="align-items:end">
+        <input type="hidden" name="class_id" value="{{ selected_class_id }}">
+        <div class="form-group">
+            <label>Предмет</label>
+            <select name="subject_id" class="form-control" required>
+                {% for s in subjects %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Учитель</label>
+            <input type="text" class="form-control" placeholder="Введите фамилию или имя" data-autocomplete="teacher" data-hidden-id="teacherSchedId" autocomplete="off" required>
+            <input type="hidden" name="teacher_id" id="teacherSchedId">
+        </div>
+        <div class="form-group">
+            <label>День недели</label>
+            <select name="day_of_week" class="form-control">
+                <option value="1">Пн</option><option value="2">Вт</option><option value="3">Ср</option>
+                <option value="4">Чт</option><option value="5">Пт</option><option value="6">Сб</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Номер урока</label>
+            <select name="lesson_number" class="form-control">
+                {% for i in range(1, 9) %}
+                <option value="{{ i }}">{{ i }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Кабинет</label>
+            <input type="text" name="classroom" class="form-control" placeholder="Каб. 12">
+        </div>
+        <button type="submit" class="btn btn-primary">Добавить</button>
+    </form>
+</div>
+
+<!--/ ===== Отображение расписания / Schedule display ===== -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Расписание</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>День</th><th>№</th><th>Предмет</th><th>Учитель</th><th>Кабинет</th><th>Действ. с</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% set days = ['', 'Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'] %}
+                {% for s in schedules %}
+                <tr>
+                    <td><strong>{{ days[s.day_of_week] }}</strong></td>
+                    <td>{{ s.lesson_number }}</td>
+                    <td>{{ s.subject.name }}</td>
+                    <td>{{ s.teacher.last_name }} {{ s.teacher.first_name }}</td>
+                    <td>{{ s.classroom or '—' }}</td>
+                    <td style="font-size:0.75rem;color:var(--text-muted)">{{ s.valid_from.strftime('%d.%m.%Y') if s.valid_from else '—' }}</td>
+                    <td>
+                        <form method="POST" action="/admin/schedule/{{ s.id }}/delete" style="display:inline" onsubmit="return confirm('Удалить?')">
+                            <button type="submit" class="btn btn-danger btn-sm">{{ icons.trash() }}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7"><div class="empty-state">Расписание пусто</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+<style>
+@media (max-width: 912px) {
+  .form-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 886px) {
+  .form-row { gap: 0.75rem; }
+  .table-wrapper td { font-size: 0.8rem; padding: 0.35rem 0.4rem; }
+}
+@media (max-width: 743px) {
+  .form-row { grid-template-columns: 1fr; }
+  .card .btn-group { flex-wrap: wrap; }
+}
+@media (max-width: 492px) {
+  .form-row .btn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+  .card .btn-group .btn { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
+}
+@media (max-width: 430px) {
+  .form-row { grid-template-columns: 1fr; }
+  .card .btn-group { flex-wrap: wrap; }
+  .card .btn-group .btn { flex: 1; justify-content: center; font-size: 0.65rem; padding: 0.2rem 0.35rem; }
+  .form-control { font-size: 0.7rem; padding: 0.3rem 0.4rem; }
+}
+@media (max-width: 390px) {
+  .table-wrapper td { font-size: 0.7rem; }
+}
+</style>
+<!--/ ===== Конец schedule.html / End schedule.html ===== -->
+{% endblock %}

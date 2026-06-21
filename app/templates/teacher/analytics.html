@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block page_title %}Аналитика — {{ class_.name }} · {{ subject.name }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-2" style="margin-bottom:1.5rem">
+    <div class="card" style="padding:0">
+        <div class="card-header" style="padding:0.75rem 1rem;margin:0">
+            <h3 class="card-title">Средний балл учеников</h3>
+        </div>
+        <div style="padding:0.75rem;max-height:280px;position:relative">
+            <canvas id="studentsChart" height="220"></canvas>
+        </div>
+    </div>
+    <div class="card" style="padding:0">
+        <div class="card-header" style="padding:0.75rem 1rem;margin:0">
+            <h3 class="card-title">Распределение оценок</h3>
+        </div>
+        <div style="padding:0.75rem;max-height:280px;position:relative;display:flex;justify-content:center">
+            <canvas id="distributionChart" height="220" style="max-width:280px"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Детализация</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Ученик</th><th>Средний балл</th><th>Кол-во оценок</th><th>Профиль</th></tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                {% set student_data = chart_data|selectattr('name', 'equalto', s.last_name ~ ' ' ~ s.first_name[0] ~ '.')|first %}
+                <tr>
+                    <td>{{ s.last_name }} {{ s.first_name }}</td>
+                    <td>
+                        {% if student_data and student_data.avg > 0 %}
+                        <div class="grade-value grade-{{ student_data.avg|int }}">{{ student_data.avg }}</div>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td>{{ student_data.count if student_data else 0 }}</td>
+                    <td><a href="/teacher/student/{{ s.id }}/profile" class="btn btn-outline btn-sm">{{ icons.user(14) }}</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<style>
+@media (max-width: 912px) {
+  .grid.grid-2 { grid-template-columns: 1fr 1fr; }
+  canvas { max-height: 200px !important; }
+}
+@media (max-width: 886px) {
+  .grid.grid-2 { grid-template-columns: 1fr 1fr; }
+  canvas { max-height: 190px !important; }
+}
+@media (max-width: 743px) {
+  canvas { max-height: 185px !important; }
+  .card-header h3 { font-size: 0.9rem; }
+}
+@media (max-width: 492px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  canvas { max-height: 180px !important; }
+}
+@media (max-width: 430px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  canvas { max-height: 160px !important; }
+  .card-header h3 { font-size: 0.8rem; }
+}
+@media (max-width: 390px) {
+  canvas { max-height: 150px !important; }
+  .grade-value { width: 28px; height: 28px; font-size: 0.7rem; }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const studentsCtx = document.getElementById('studentsChart');
+    if (studentsCtx) {
+        new Chart(studentsCtx, {
+            type: 'bar',
+            data: {
+                labels: [{% for d in chart_data %}'{{ d.name }}',{% endfor %}],
+                datasets: [{
+                    label: 'Средний балл',
+                    data: [{% for d in chart_data %}{{ d.avg }},{% endfor %}],
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    //* Распределение оценок
+    const distCtx = document.getElementById('distributionChart');
+    if (distCtx) {
+        const allGrades = [{% for d in chart_data %}{% for g in d.all_grades %}{{ g }},{% endfor %}{% endfor %}];
+        const counts = {5:0, 4:0, 3:0, 2:0};
+        allGrades.forEach(g => { if (counts[g] !== undefined) counts[g]++; });
+
+        new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['5', '4', '3', '2'],
+                datasets: [{
+                    data: [counts[5], counts[4], counts[3], counts[2]],
+                    backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'],
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+});
+</script>
+
+<style>
+@media (max-width: 912px) {
+  .grid.grid-2 { grid-template-columns: 1fr 1fr; }
+  canvas { max-height: 200px !important; }
+}
+@media (max-width: 886px) {
+  .grid.grid-2 { grid-template-columns: 1fr 1fr; }
+  canvas { max-height: 190px !important; }
+}
+@media (max-width: 743px) {
+  canvas { max-height: 185px !important; }
+  .card-header h3 { font-size: 0.9rem; }
+}
+@media (max-width: 492px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  canvas { max-height: 180px !important; }
+}
+@media (max-width: 430px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  canvas { max-height: 160px !important; }
+  .card-header h3 { font-size: 0.8rem; }
+}
+@media (max-width: 390px) {
+  canvas { max-height: 150px !important; }
+  .grade-value { width: 28px; height: 28px; font-size: 0.7rem; }
+}
+</style>
+{% endblock %}

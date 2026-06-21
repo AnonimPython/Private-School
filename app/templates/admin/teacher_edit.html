@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+<!--* teacher_edit.html — Форма редактирования данных учителя / Teacher data edit form -->
+{% block page_title %}Редактировать учителя{% endblock %}
+
+{% block content %}
+<!--/ ===== Карточка редактирования учителя / Teacher edit card ===== -->
+<div class="card" style="max-width:600px;margin:0 auto">
+    <div class="card-header">
+        <h3 class="card-title">{{ target.last_name }} {{ target.first_name }} {{ target.middle_name or '' }}</h3>
+    </div>
+    <!--! ===== Блок ошибок / Error block ===== -->
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/admin/teachers/{{ target.id }}/edit">
+        <!--/ ===== Основная информация / Basic info ===== -->
+        <div class="form-row">
+            <div class="form-group">
+                <label>Фамилия *</label>
+                <input type="text" name="last_name" class="form-control" value="{{ target.last_name }}" required>
+            </div>
+            <div class="form-group">
+                <label>Имя *</label>
+                <input type="text" name="first_name" class="form-control" value="{{ target.first_name }}" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Отчество</label>
+            <input type="text" name="middle_name" class="form-control" value="{{ target.middle_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" class="form-control" value="{{ target.email }}">
+        </div>
+        <div class="form-group">
+            <label>Телефон</label>
+            <input type="text" name="phone" class="form-control" value="{{ target.phone or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Новый пароль (оставьте пустым, чтобы не менять)</label>
+            <input type="password" name="password" class="form-control" placeholder="••••••••">
+        </div>
+        <hr style="margin:1.5rem 0;border-color:var(--border)">
+        <!--/ ===== Профессиональные данные / Professional data ===== -->
+        <div class="form-group">
+            <label>Должность</label>
+            <input type="text" name="staff_position" class="form-control" value="{{ target.staff_position or '' }}" placeholder="Учитель математики">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Стаж (лет)</label>
+                <input type="number" name="experience_years" class="form-control" value="{{ target.experience_years or '' }}" min="0">
+            </div>
+            <div class="form-group">
+                <label>Трудовая книжка №</label>
+                <input type="text" name="labor_book_number" class="form-control" value="{{ target.labor_book_number or '' }}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Зарплата (руб/мес)</label>
+                <input type="number" name="salary_monthly" class="form-control" value="{{ target.salary_monthly or '' }}" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Часов в неделю</label>
+                <input type="number" name="hours_per_week" class="form-control" value="{{ target.hours_per_week or '' }}" min="0" step="0.5">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Адрес</label>
+            <input type="text" name="address" class="form-control" value="{{ target.address or '' }}">
+        </div>
+        <!--? ===== Калькулятор ставки / Hourly rate calculator ===== -->
+        <div id="hourlyRateDisplay" style="margin:0.75rem 0;padding:0.5rem 0.75rem;background:var(--bg-secondary,#f0f4ff);border-radius:0.375rem;font-size:0.85rem;display:none">
+            Ставка: <strong id="hourlyRateValue">0</strong> руб/час
+            <small style="color:var(--text-muted);display:block">Рассчитано: зарплата ÷ (часы × 4.33)</small>
+        </div>
+        <script>
+        (function(){
+            var salaryInput = document.querySelector('[name="salary_monthly"]');
+            var hoursInput = document.querySelector('[name="hours_per_week"]');
+            var display = document.getElementById('hourlyRateDisplay');
+            var valueEl = document.getElementById('hourlyRateValue');
+            function calcRate(){
+                var s = parseFloat(salaryInput.value) || 0;
+                var h = parseFloat(hoursInput.value) || 0;
+                if(s > 0 && h > 0){
+                    var rate = s / (h * 4.33);
+                    valueEl.textContent = rate.toFixed(2);
+                    display.style.display = 'block';
+                } else {
+                    display.style.display = 'none';
+                }
+            }
+            salaryInput.addEventListener('input', calcRate);
+            hoursInput.addEventListener('input', calcRate);
+        })();
+        </script>
+        <!--* ===== Кнопки отправки / Submit buttons ===== -->
+        <div class="btn-group" style="margin-top:1rem">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="/admin/teachers" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+<style>
+@media (max-width: 886px) {
+  .form-row { gap: 0.75rem; }
+}
+@media (max-width: 743px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 492px) {
+  .form-row .btn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+}
+@media (max-width: 430px) {
+  .card[style*="max-width"] { max-width: 100% !important; }
+  .form-row { grid-template-columns: 1fr; }
+  .form-control { font-size: 0.7rem; padding: 0.3rem 0.4rem; }
+  .btn-group .btn { font-size: 0.65rem; padding: 0.3rem 0.45rem; }
+}
+</style>
+{% endblock %}

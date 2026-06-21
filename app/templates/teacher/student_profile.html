@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block page_title %}Профиль ученика{% endblock %}
+
+{% block content %}
+<div class="grid grid-2" style="margin-bottom:1.5rem">
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">{{ student.first_name[0] }}{{ student.last_name[0] }}</div>
+            <h2>{{ student.last_name }} {{ student.first_name }} {% if student.middle_name %}{{ student.middle_name }}{% endif %}</h2>
+            <p style="opacity:0.9">{{ enrollment.class_.name if enrollment else 'Класс не назначен' }}</p>
+        </div>
+        <div class="profile-body">
+            <div class="profile-field">
+                <span class="profile-field-label">Логин</span>
+                <span class="profile-field-value">{{ student.username or student.email }}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Дата рождения</span>
+                <span class="profile-field-value">{{ student.date_of_birth.strftime('%d.%m.%Y') if student.date_of_birth else '—' }}{% if age %} ({{ age }} лет){% endif %}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Адрес</span>
+                <span class="profile-field-value">{{ student.address or '—' }}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Телефон</span>
+                <span class="profile-field-value">{{ student.phone or '—' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Родители</h3>
+        </div>
+        <div class="profile-body">
+            <div class="profile-field">
+                <span class="profile-field-label">Мама</span>
+                <span class="profile-field-value">{{ student.mother_name or '—' }}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Телефон мамы</span>
+                <span class="profile-field-value">{{ student.mother_phone or '—' }}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Папа</span>
+                <span class="profile-field-value">{{ student.father_name or '—' }}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Телефон папы</span>
+                <span class="profile-field-value">{{ student.father_phone or '—' }}</span>
+            </div>
+            <div class="profile-field">
+                <span class="profile-field-label">Экстренный контакт</span>
+                <span class="profile-field-value">{{ student.emergency_contact or '—' }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if enrollment %}
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title">Медицинская информация</h3>
+    </div>
+    <div class="profile-body">
+        <p>{{ student.medical_info or 'Нет данных' }}</p>
+    </div>
+</div>
+
+<!-- Trimester Filter -->
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title">Успеваемость по предметам</h3>
+        <div class="btn-group">
+            <a href="?term=0" class="btn btn-sm {% if current_term == 0 %}btn-primary{% else %}btn-outline{% endif %}">Все оценки</a>
+            <a href="?term=1" class="btn btn-sm {% if current_term == 1 %}btn-primary{% else %}btn-outline{% endif %}">1 триместр</a>
+            <a href="?term=2" class="btn btn-sm {% if current_term == 2 %}btn-primary{% else %}btn-outline{% endif %}">2 триместр</a>
+            <a href="?term=3" class="btn btn-sm {% if current_term == 3 %}btn-primary{% else %}btn-outline{% endif %}">3 триместр</a>
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:180px">Предмет</th>
+                    <th>Оценки</th>
+                    <th style="width:100px;text-align:center">Средний балл</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sg in subject_grades %}
+                <tr>
+                    <td><strong>{{ sg.subject.name }}</strong></td>
+                    <td>
+                        {% if sg.grades %}
+                            {% for g in sg.grades %}
+                            {% if g.attendance_status == "absent" %}
+                            <span class="grade-value grade-absent" style="display:inline-block;width:32px;height:32px;font-size:0.75rem;margin:0.1rem;cursor:default;background:var(--red);color:var(--white)" title="{{ g.grade_date.strftime('%d.%m.%Y') }}">Н</span>
+                            {% elif g.attendance_status == "sick" %}
+                            <span class="grade-value grade-sick" style="display:inline-block;width:32px;height:32px;font-size:0.75rem;margin:0.1rem;cursor:default;background:var(--blue-600);color:var(--white)" title="{{ g.grade_date.strftime('%d.%m.%Y') }}">Б</span>
+                            {% else %}
+                            <span class="grade-value grade-{{ g.value|int }}" style="display:inline-block;width:32px;height:32px;font-size:0.75rem;margin:0.1rem;cursor:default" title="{{ g.grade_date.strftime('%d.%m.%Y') }}">{{ g.value|int }}</span>
+                            {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">нет оценок</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center">
+                        {% if sg.average > 0 %}
+                            <span class="grade-value grade-{{ sg.average|int }}" style="display:inline-block;width:40px;height:40px;font-size:0.85rem">{{ sg.average }}</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3"><div class="empty-state">Нет предметов</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Действия</h3>
+    </div>
+    <div style="padding:1rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+        {% if enrollment %}
+            {% for sg in subject_grades %}
+            <a href="/teacher/class/{{ enrollment.class_id }}/subject/{{ sg.subject.id }}" class="btn btn-outline btn-sm">{{ sg.subject.name }} → Оценки</a>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+<style>
+@media (max-width: 886px) {
+  .profile-header { padding: 1.5rem 1.25rem; }
+  .profile-header h2 { font-size: 1.2rem; }
+  .profile-avatar { width: 64px; height: 64px; font-size: 1.35rem; }
+  .grade-value { width: 28px; height: 28px; font-size: 0.65rem; }
+}
+@media (max-width: 743px) {
+  .grid.grid-2 { grid-template-columns: 1fr; }
+  .profile-field { gap: 0.2rem; }
+  .grade-value { width: 26px; height: 26px; font-size: 0.6rem; }
+}
+@media (max-width: 492px) {
+  .profile-header h2 { font-size: 1.15rem; }
+  .profile-avatar { width: 60px; height: 60px; font-size: 1.3rem; }
+  .grade-value { width: 22px; height: 22px; font-size: 0.55rem; }
+  .btn-group .btn { font-size: 0.7rem; padding: 0.2rem 0.4rem; }
+}
+@media (max-width: 430px) {
+  .profile-header { padding: 0.75rem 0.5rem; }
+  .profile-header h2 { font-size: 1rem; }
+  .profile-avatar { width: 48px; height: 48px; font-size: 1.1rem; }
+}
+@media (max-width: 390px) {
+  .profile-field { flex-direction: column; gap: 0.15rem; }
+  .profile-field-value { font-size: 0.85rem; }
+}
+</style>
+{% endblock %}

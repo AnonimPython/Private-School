@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block page_title %}Мои оценки{% endblock %}
+
+{% block content %}
+<div style="max-width:860px;margin:0 auto">
+    <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+            <h3 class="card-title">Средний балл: <span class="grade-value grade-{{ overall_avg|int }}">{{ overall_avg }}</span></h3>
+            <div class="btn-group">
+                {% for t in trimesters %}
+                <a href="/student/grades?trimester={{ t }}" class="btn btn-sm {% if trimester == t %}btn-primary{% else %}btn-outline{% endif %}">
+                    {{ t }} триместр
+                </a>
+                {% endfor %}
+                <a href="/student/grades?trimester=0" class="btn btn-sm {% if trimester == 0 %}btn-primary{% else %}btn-outline{% endif %}">Все</a>
+            </div>
+        </div>
+    </div>
+
+    {% for subj_name, grade_list in subjects_grades.items() %}
+    <div class="grade-row" style="padding:0.625rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap">
+        <span style="min-width:120px;font-weight:600;font-size:0.95rem;flex-shrink:0">{{ subj_name }}</span>
+        <div style="display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;flex:1">
+            {% for g in grade_list %}
+            {% if g.attendance_status == "absent" %}
+            <span class="grade-value grade-absent" style="background:var(--red);color:var(--white)" title="{{ g.comment or g.type }}">Н</span>
+            {% elif g.attendance_status == "sick" %}
+            <span class="grade-value grade-sick" style="background:var(--blue-600);color:var(--white)" title="{{ g.comment or g.type }}">Б</span>
+            {% else %}
+            <span class="grade-value grade-{{ g.value|int }}" title="{{ g.comment or g.type }}">{{ g.value|int }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <span style="margin-left:0.75rem;white-space:nowrap;font-weight:700;font-size:1rem;flex-shrink:0">
+            {% if averages.get(subj_name) %}{{ averages[subj_name] }}{% endif %}
+        </span>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <p>Оценок пока нет</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

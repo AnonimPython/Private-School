@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+<!--/ teachers.html — Список всех учителей с поиском и назначениями / List of all teachers with search and assignments -->
+{% block page_title %}Учителя{% endblock %}
+
+{% block content %}
+<!--/ ===== Список учителей с поиском / Teacher list with search ===== -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Все учителя</h3>
+    </div>
+    <!--? ===== Поиск по учителям / Teacher search input ===== -->
+    <div style="padding:0 1.25rem 0.75rem">
+        <input type="text" id="teacherSearch" class="form-control" placeholder="Поиск по имени, email..." oninput="filterTeachers(this.value)">
+    </div>
+    <div class="table-wrapper">
+        <table id="teachersTable">
+            <thead>
+                <tr>
+                    <th>ФИО</th>
+                    <th>Email</th>
+                    <th>Телефон</th>
+                    <th>Должность</th>
+                    <th>Стаж (лет)</th>
+                    <th>Классы / Предметы</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in teachers %}
+                <tr>
+                    <td><strong>{{ t.last_name }} {{ t.first_name }} {{ t.middle_name or '' }}</strong></td>
+                    <td>{{ t.email }}</td>
+                    <td>{{ t.phone or '—' }}</td>
+                    <td>{{ t.staff_position or '—' }}</td>
+                    <td>{{ t.experience_years or '—' }}</td>
+                    <td>
+                        {% set assignments = teacher_assignments.get(t.id|string, []) %}
+                        {% if assignments %}
+                            {% for a in assignments %}
+                                <span class="badge badge-subject">{{ a.class_.name }} — {{ a.subject.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">нет назначений</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="/admin/teachers/{{ t.id }}/edit" class="btn btn-outline btn-sm">{{ icons.edit() }}</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7"><div class="empty-state">Нет учителей</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+function filterTeachers(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('#teachersTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
+<!--/ ===== Mobile card list / Карточки учителей на телефоне ===== -->
+<div class="teacher-mobile-list" id="teacherMobileList">
+    {% for t in teachers %}
+    <div class="teacher-card" data-search="{{ t.last_name }} {{ t.first_name }} {{ t.middle_name or '' }} {{ t.email }}">
+        <div class="teacher-card-top">
+            <div class="teacher-card-avatar">{{ t.last_name[0] }}{{ t.first_name[0] }}</div>
+            <div class="teacher-card-info">
+                <div class="teacher-card-name">{{ t.last_name }} {{ t.first_name }} {{ t.middle_name or '' }}</div>
+                <div class="teacher-card-email">{{ t.email }}</div>
+            </div>
+            <a href="/admin/teachers/{{ t.id }}/edit" class="teacher-card-edit">{{ icons.edit(18) }}</a>
+        </div>
+        <div class="teacher-card-details">
+            {% if t.phone %}<div class="teacher-card-detail"><span class="detail-label">Телефон</span><span>{{ t.phone }}</span></div>{% endif %}
+            <div class="teacher-card-detail"><span class="detail-label">Должность</span><span>{{ t.staff_position or '—' }}</span></div>
+            <div class="teacher-card-detail"><span class="detail-label">Стаж</span><span>{{ t.experience_years or '—' }} лет</span></div>
+        </div>
+        <div class="teacher-card-tags">
+            {% set assignments = teacher_assignments.get(t.id|string, []) %}
+            {% if assignments %}
+                {% for a in assignments %}
+                <span class="badge badge-subject">{{ a.class_.name }} — {{ a.subject.name }}</span>
+                {% endfor %}
+            {% else %}
+                <span class="text-muted" style="font-size:0.75rem">нет назначений</span>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">Нет учителей</div>
+    {% endfor %}
+</div>
+
+<!--/ ===== Адаптивные стили / Responsive styles ===== -->
+<style>
+@supports (display: grid) {
+    .teacher-mobile-list { display: none; }
+}
+
+@media (max-width: 768px) {
+    .table-wrapper { display: none; }
+    .teacher-mobile-list { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.5rem 0; }
+
+    .teacher-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--border-radius);
+        padding: 0.75rem;
+        box-shadow: var(--shadow);
+    }
+
+    .teacher-card-top {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .teacher-card-avatar {
+        width: 40px; height: 40px;
+        background: var(--accent);
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .teacher-card-info { flex: 1; min-width: 0; }
+    .teacher-card-name { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .teacher-card-email { font-size: 0.75rem; color: var(--text-secondary); word-break: break-all; }
+
+    .teacher-card-edit {
+        width: 36px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        color: var(--text-secondary);
+        transition: background .15s, color .15s;
+        flex-shrink: 0;
+    }
+    .teacher-card-edit:hover { background: var(--bg-hover); color: var(--accent); }
+
+    .teacher-card-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 1rem;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .teacher-card-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 80px;
+    }
+
+    .detail-label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.04em;
+        font-weight: 600;
+    }
+
+    .teacher-card-detail span:last-child {
+        font-size: 0.8rem;
+        color: var(--text);
+    }
+
+    .teacher-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+}
+
+@media (max-width: 430px) {
+    .teacher-card { padding: 0.6rem; }
+    .teacher-card-avatar { width: 34px; height: 34px; font-size: 0.75rem; }
+    .teacher-card-name { font-size: 0.8rem; }
+    .teacher-card-email { font-size: 0.7rem; }
+    .teacher-card-detail span:last-child { font-size: 0.75rem; }
+}
+
+@media (max-width: 360px) {
+    .teacher-card { padding: 0.5rem; }
+    .teacher-card-avatar { width: 30px; height: 30px; font-size: 0.7rem; }
+    .teacher-card-name { font-size: 0.75rem; }
+    .teacher-card-details { gap: 0.2rem 0.75rem; }
+}
+</style>
+<script>
+//* Mobile search for teacher cards
+function filterTeachers(query) {
+    var q = query.toLowerCase();
+    //* Filter table rows
+    document.querySelectorAll('#teachersTable tbody tr').forEach(function(row) {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+    //* Filter mobile cards
+    document.querySelectorAll('.teacher-card').forEach(function(card) {
+        var searchData = (card.dataset.search || card.textContent).toLowerCase();
+        card.style.display = searchData.includes(q) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
