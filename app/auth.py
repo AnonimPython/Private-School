@@ -6,6 +6,7 @@
 #/ =====================================================================================
 
 #/ ─── Imports / Импорты ───
+import uuid
 import config
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -86,7 +87,11 @@ async def get_current_user(
         return None
 
     async def _fetch(s: AsyncSession) -> User | None:
-        result = await s.execute(select(User).where(User.id == user_id))
+        try:
+            uid = uuid.UUID(user_id)
+        except (ValueError, AttributeError):
+            return None
+        result = await s.execute(select(User).where(User.id == uid))
         u = result.scalar_one_or_none()
         return u if (u and u.is_active) else None
 
