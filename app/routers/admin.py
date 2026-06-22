@@ -71,8 +71,8 @@ async def admin_dashboard(
     grade_chart_colors = []
     color_map = {5: "#22c55e", 4: "#3b82f6", 3: "#eab308", 2: "#ef4444"}
     label_map = {5: "Отлично (5)", 4: "Хорошо (4)", 3: "Удовл. (3)", 2: "Неуд. (2)"}
-    for grade, count in sorted(grade_dist):
-        grade_chart_labels.append(label_map.get(grade, f"{grade}"))
+    for grade, count in sorted((g for g in grade_dist if g[0] is not None), key=lambda x: x[0]):
+        grade_chart_labels.append(label_map.get(grade, f"Оценка {grade}"))
         grade_chart_data.append(count)
         grade_chart_colors.append(color_map.get(grade, "#6b7280"))
 
