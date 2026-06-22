@@ -95,9 +95,29 @@ async def seed():
         result = await session.execute(select(User).where(User.role == "teacher"))
         teachers = result.scalars().all()
 
-        #* ─── Secretary ────────────────────────────────────────────────────
-        result = await session.execute(select(User).where(User.role == "secretary"))
-        if not result.scalar_one_or_none():
+        #* ─── Director + Admin + Secretary ────────────────────────────────
+        director = await session.execute(select(User).where(User.role == "director"))
+        if not director.scalar_one_or_none():
+            session.add(User(
+                email="director@school.ru",
+                username="director",
+                first_name="Директор", last_name="Школы",
+                role="director",
+                password_hash=hash_password("director123"),
+                is_active=True,
+            ))
+        admin = await session.execute(select(User).where(User.role == "admin"))
+        if not admin.scalar_one_or_none():
+            session.add(User(
+                email="admin@school.ru",
+                username="admin",
+                first_name="Администратор", last_name="Системы",
+                role="admin",
+                password_hash=hash_password("admin123"),
+                is_active=True,
+            ))
+        secretary = await session.execute(select(User).where(User.role == "secretary"))
+        if not secretary.scalar_one_or_none():
             session.add(User(
                 email="secretary@school.local",
                 username="secretary",
@@ -106,7 +126,7 @@ async def seed():
                 password_hash=hash_password("secretary123"),
                 is_active=True,
             ))
-            await session.commit()
+        await session.commit()
 
         #* ─── Students ────────────────────────────────────────────────────
         result = await session.execute(select(User).where(User.role == "student"))
