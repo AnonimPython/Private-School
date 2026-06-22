@@ -6,8 +6,8 @@
     <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/favicon.svg') }}">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <style>
         .demo-banner {
             display: flex; align-items: center; justify-content: space-between;
@@ -321,7 +321,7 @@
         </main>
     </div>
 
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    <script src="/static/js/main.js"></script>
     <script>
     async function updateChatBadge() {
       try {
