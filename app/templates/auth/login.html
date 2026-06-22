@@ -6,6 +6,28 @@
     <title>{{ SCHOOL_NAME }} — Электронный дневник</title>
     <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
     <style>
+        :root {
+            --white: #ffffff; --gray-50: #f9fafb; --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-400: #9ca3af;
+            --gray-500: #6b7280; --gray-700: #374151; --gray-900: #111827;
+            --blue: #2563eb; --purple: #8b5cf6;
+            --red-50: #fef2f2; --red-100: #fee2e2; --red-700: #b91c1c;
+            --bg: var(--gray-50); --bg-card: var(--white); --bg-input: var(--white);
+            --bg-hover: var(--gray-100); --border: var(--gray-200);
+            --text: var(--gray-900); --text-secondary: var(--gray-500); --text-muted: var(--gray-400);
+            --accent: var(--blue);
+            --border-radius: 12px; --border-radius-sm: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05);
+            --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+        }
+        [data-theme="dark"] {
+            --white: #0f0f1a; --gray-50: #1a1a2e; --gray-100: #1e1e3a;
+            --gray-200: #2a2a4a; --gray-500: #94a3b8; --gray-900: #f1f5f9;
+            --bg: #0f0f1a; --bg-card: #1a1a2e; --bg-input: #1e1e3a;
+            --bg-hover: #2a2a4a; --border: #334155;
+            --text: #f1f5f9; --text-secondary: #94a3b8;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; font-family: var(--font); }
         body {
