@@ -174,7 +174,7 @@ All settings in [`config.py`](config.py) — override via `.env` or environment 
 ### 1. Clone & Configure
 
 ```bash
-git clone https://github.com/your-org/school-portal.git
+git clone https://github.com/AnonimPython/Private-School.git
 cp .env.example .env
 ```
 
