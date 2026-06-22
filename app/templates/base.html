@@ -24,6 +24,14 @@
         }
         .demo-banner-right:hover { opacity: 1; color: #fff; text-decoration: underline; }
         .app-container { margin-top: 0 !important; }
+        .demo-top-switch { display: flex; gap: 2px; background: var(--bg); border-radius: var(--border-radius-sm); padding: 2px; border: 1px solid var(--border); }
+        .demo-top-btn {
+            padding: 0.3rem 0.6rem; font-size: 0.7rem; font-weight: 600;
+            text-decoration: none; color: var(--text-secondary); border-radius: 6px;
+            transition: all .15s; font-family: inherit;
+        }
+        .demo-top-btn:hover { background: var(--bg-hover); color: var(--text); }
+        .demo-top-btn.active { background: #7c3aed; color: #fff; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     {% block head %}{% endblock %}
@@ -58,6 +66,22 @@
             </div>
 
             <nav class="sidebar-nav">
+                {% if DEMO_MODE and user %}
+                <div class="nav-section">Демо-режим</div>
+                <a href="/demo/login/director" class="nav-item {% if user.role == 'director' %}active{% endif %}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span>Директор</span>
+                </a>
+                <a href="/demo/login/teacher" class="nav-item {% if user.role == 'teacher' %}active{% endif %}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    <span>Учитель</span>
+                </a>
+                <a href="/demo/login/student" class="nav-item {% if user.role == 'student' %}active{% endif %}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    <span>Ученик</span>
+                </a>
+                <div style="height:0.5rem"></div>
+                {% endif %}
                 {% if user %}
                     {% set role = user.role %}
 
@@ -274,7 +298,15 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
                 <h1 class="page-title">{% block page_title %}{{ APP_NAME }}{% endblock %}</h1>
-                <div class="top-bar-right"></div>
+                <div class="top-bar-right">
+                    {% if DEMO_MODE and user %}
+                    <div class="demo-top-switch">
+                        <a href="/demo/login/director" class="demo-top-btn {% if user.role == 'director' %}active{% endif %}" title="Директор">Дир</a>
+                        <a href="/demo/login/teacher" class="demo-top-btn {% if user.role == 'teacher' %}active{% endif %}" title="Учитель">Уч</a>
+                        <a href="/demo/login/student" class="demo-top-btn {% if user.role == 'student' %}active{% endif %}" title="Ученик">Уч‑ся</a>
+                    </div>
+                    {% endif %}
+                </div>
             </header>
 
             <div class="content">

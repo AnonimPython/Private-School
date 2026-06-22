@@ -16,6 +16,7 @@ from app.auth import (
 from app.logger import log_action, LOGIN, LOGOUT
 from app.main import templates
 from pydantic import BaseModel
+import config
 
 router = APIRouter(prefix="", tags=["auth"])
 
@@ -92,6 +93,58 @@ async def login(
         value=token,
         httponly=True,
         max_age=86400 * 30,  #* 30 days
+        samesite="lax",
+    )
+    return response
+
+
+#! ─── Demo login — instant role switch (DEMO_MODE only) ────────────────────
+@router.get("/demo/login/{role}")
+async def demo_login(
+    role: str,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    if not config.DEMO_MODE:
+        raise HTTPException(status_code=404)
+    email_map = {
+        "director": "director@school.ru",
+        "admin": "admin@school.ru",
+        "teacher": "ivan.petrov@school.local",
+        "secretary": "secretary@school.local",
+    }
+    email = email_map.get(role)
+    if role == "student":
+        result = await session.execute(select(User).where(User.role == "student"))
+        student = result.scalars().first()
+        if not student:
+            return templates.TemplateResponse(
+                "auth/login.html",
+                {"request": request, "error": "Нет демо-ученика"},
+                status_code=400,
+            )
+        email = student.email
+    if not email:
+        raise HTTPException(status_code=404)
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if not user:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "error": f"Демо-пользователь {role} не найден"},
+            status_code=400,
+        )
+    token = create_token({
+        "user_id": str(user.id),
+        "email": user.email,
+        "role": user.role,
+    })
+    response = RedirectResponse(url="/", status_code=302)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=86400 * 30,
         samesite="lax",
     )
     return response
