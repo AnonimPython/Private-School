@@ -127,7 +127,7 @@
 ### Docker (рекомендуется)
 
 ```bash
-git clone https://github.com/your-org/school-portal.git
+git clone https://github.com/AnonimPython/Private-School.git
 cd school-portal
 cp .env.example .env
 docker compose -p school up -d
