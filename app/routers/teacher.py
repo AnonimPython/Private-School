@@ -145,11 +145,10 @@ async def class_overview(
     students = await session.execute(
         select(User).join(Enrollment).where(
             Enrollment.class_id == class_id, User.role == "student", User.is_active == True
-        ).order_by(User.last_name, User.first_name)
+        )
     )
     students = students.scalars().all()
-
-    #* Get subjects taught in this class
+    students.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
     subjects = await session.execute(
         select(Subject)
         .join(TeacherAssignment)
@@ -191,9 +190,9 @@ async def class_students(
         select(User)
         .join(Enrollment)
         .where(Enrollment.class_id == class_id, User.role == "student", User.is_active == True)
-        .order_by(User.last_name, User.first_name)
     )
     students = students.scalars().all()
+    students.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
 
     #* Get subject and class
     subject = (await session.execute(select(Subject).where(Subject.id == subject_id))).scalar_one()
@@ -697,9 +696,10 @@ async def teacher_analytics(
             raise HTTPException(status_code=403)
 
     students = await session.execute(
-        select(User).join(Enrollment).where(Enrollment.class_id == class_id, User.role == "student").order_by(User.last_name)
+        select(User).join(Enrollment).where(Enrollment.class_id == class_id, User.role == "student")
     )
     students = students.scalars().all()
+    students.sort(key=lambda u: u.last_name or "")
 
     class_ = (await session.execute(select(Class).where(Class.id == class_id))).scalar_one()
     subject = (await session.execute(select(Subject).where(Subject.id == subject_id))).scalar_one()

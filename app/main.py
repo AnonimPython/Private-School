@@ -15,7 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.auth import hash_password, add_user_to_context
+from app.auth import hash_password, add_user_to_context, get_current_user
+from app.update_checker import get_update_info, get_current_version
 from app.database import init_db, get_session, async_session
 from app.models.models import User
 
@@ -158,6 +159,7 @@ async def internal_error(request: Request, exc: Exception):
     return templates.TemplateResponse("errors/500.html", {"request": request}, status_code=500)
 templates.env.globals.update({
     "APP_NAME": config.APP_NAME,
+    "APP_VERSION": get_current_version(),
     "SCHOOL_NAME": config.SCHOOL_NAME,
     "SCHOOL_CITY": config.SCHOOL_CITY,
     "DEBUG": config.DEBUG,
@@ -218,6 +220,55 @@ app.include_router(news.router)
 app.include_router(api.router)
 app.include_router(chat.router)
 app.include_router(library.router)
+
+
+#* ─── Update check API ───
+from fastapi.responses import JSONResponse
+import asyncio
+import config
+
+@app.get("/api/check-update")
+async def api_check_update(request: Request):
+    # Return nothing if updates are disabled in config
+    if not config.CHECK_UPDATES:
+        return JSONResponse({"update_available": False})
+    user = await get_current_user(request)
+    if not user or user.role not in ("admin", "director"):
+        return JSONResponse({"update_available": False})
+    info = await asyncio.to_thread(get_update_info)
+    return JSONResponse(info)
+
+#* ─── Self-update: git pull + restart ───
+import subprocess
+import sys
+import os as os_module
+
+@app.post("/api/update-self")
+async def api_update_self(request: Request):
+    """Pull latest code from GitHub and restart the server."""
+    user = await get_current_user(request)
+    if not user or user.role not in ("admin", "director"):
+        return JSONResponse({"ok": False, "error": "Access denied"}, status_code=403)
+    try:
+        # Fetch and reset to origin/main (safe: no merge, no conflicts)
+        result = subprocess.run(
+            ["git", "fetch", "origin", "main"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            return JSONResponse({"ok": False, "error": result.stderr.strip()})
+        result = subprocess.run(
+            ["git", "reset", "--hard", "origin/main"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            return JSONResponse({"ok": False, "error": result.stderr.strip()})
+        # Restart the server process
+        os_module.execv(sys.executable, ["python"] + sys.argv)
+    except subprocess.TimeoutExpired:
+        return JSONResponse({"ok": False, "error": "Git operation timed out"})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
 
 
 #* ─── Redirect root ───

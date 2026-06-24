@@ -65,6 +65,16 @@ JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
 
 
 #/ ═══════════════════════════════════════════════════════════════════════════════
+#/  DATA ENCRYPTION — AES-256-GCM for PII  /  ШИФРОВАНИЕ ЛИЧНЫХ ДАННЫХ
+#/ ═══════════════════════════════════════════════════════════════════════════════
+
+#! AES-256-GCM encryption key for personal data (base64-encoded 32 bytes)
+#! Generate: python -c "import base64,os; print(base64.b64encode(os.urandom(32)).decode())"
+#! ⚠ If changed, existing encrypted data becomes unrecoverable!
+DATA_ENCRYPTION_KEY = os.getenv("DATA_ENCRYPTION_KEY", "")
+
+
+#/ ═══════════════════════════════════════════════════════════════════════════════
 #/  APP — general settings  /  ОБЩИЕ НАСТРОЙКИ
 #/ ═══════════════════════════════════════════════════════════════════════════════
 
@@ -79,6 +89,11 @@ DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 #! Demo mode — read-only (no POST/PUT/DELETE). Default: false
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+
+#! Enable/disable update notifications (GitHub releases check) / Вкл/выкл уведомлений
+#! When False → admin/director never see the update toast.
+#! Change to "false" in .env if you don't want update reminders.
+CHECK_UPDATES = os.getenv("CHECK_UPDATES", "true").lower() == "true"
 
 
 #/ ═══════════════════════════════════════════════════════════════════════════════

@@ -37,8 +37,6 @@ VIEW_LOGS = "view_logs"
 UPDATE_SCHEDULE = "update_schedule"
 DELETE_SCHEDULE = "delete_schedule"
 CLEANUP_LOGS = "cleanup_logs"
-
-
 #* ─── Logger ───
 
 def log_action(

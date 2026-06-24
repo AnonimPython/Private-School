@@ -16,13 +16,13 @@
         <table id="teachersTable">
             <thead>
                 <tr>
-                    <th>ФИО</th>
-                    <th>Email</th>
-                    <th>Телефон</th>
-                    <th>Должность</th>
-                    <th>Стаж (лет)</th>
-                    <th>Классы / Предметы</th>
-                    <th>Действия</th>
+                    <th class="col-name">ФИО</th>
+                    <th class="col-email">Email</th>
+                    <th class="col-phone">Телефон</th>
+                    <th class="col-position">Должность</th>
+                    <th class="col-exp">Стаж (лет)</th>
+                    <th class="col-assignments">Классы / Предметы</th>
+                    <th class="col-actions">Действия</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,7 +30,7 @@
                 <tr>
                     <td><strong>{{ t.last_name }} {{ t.first_name }} {{ t.middle_name or '' }}</strong></td>
                     <td>{{ t.email }}</td>
-                    <td>{{ t.phone or '—' }}</td>
+                    <td class="col-phone">{{ t.phone or '—' }}</td>
                     <td>{{ t.staff_position or '—' }}</td>
                     <td>{{ t.experience_years or '—' }}</td>
                     <td>
@@ -102,6 +102,16 @@ function filterTeachers(query) {
 @supports (display: grid) {
     .teacher-mobile-list { display: none; }
 }
+
+/*? Fix column widths: phone shouldn't compress, assignments should have room */
+#teachersTable { table-layout: fixed; width: 100%; }
+.col-name { width: 22%; }
+.col-email { width: 18%; }
+.col-phone { width: 14%; white-space: nowrap; }
+.col-position { width: 12%; }
+.col-exp { width: 7%; }
+.col-assignments { width: 20%; }
+.col-actions { width: 7%; }
 
 @media (max-width: 768px) {
     .table-wrapper { display: none; }

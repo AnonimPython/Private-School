@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"
+      - "8000:7860"
     depends_on:
       postgres:
         condition: service_healthy
@@ -12,6 +12,8 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://school:school_pass@postgres:5432/school_db
       - MONGO_URL=mongodb://mongo:27017
+      - DEMO_MODE=false
+      - DATA_ENCRYPTION_KEY=E5vLdot0kuv6k8leIlqqHKWvG4DqnbNjPC5EU23cdww=
     volumes:
       - .:/app
     restart: unless-stopped

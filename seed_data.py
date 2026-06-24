@@ -18,6 +18,97 @@ from app.models.models import User, Class, Subject, Enrollment, TeacherAssignmen
 from app.auth import hash_password
 from config import DATABASE_URL
 
+
+# ─── Helper data for realistic Russian PII ───────────────────────────────
+PHONES = [
+    "+7-903-{}-{}-{}", "+7-916-{}-{}-{}", "+7-925-{}-{}-{}",
+    "+7-926-{}-{}-{}", "+7-495-{}-{}-{}", "+7-499-{}-{}-{}",
+]
+
+CITIES = [
+    "г. Москва", "г. Санкт-Петербург", "г. Казань", "г. Новосибирск",
+    "г. Екатеринбург", "г. Нижний Новгород", "г. Самара",
+]
+
+STREETS = [
+    "ул. Ленина", "ул. Мира", "ул. Советская", "ул. Гагарина",
+    "ул. Пушкина", "ул. Садовая", "пр-т Мира", "ул. Лесная",
+    "ул. Школьная", "ул. Центральная", "ул. Заречная", "ул. Молодёжная",
+]
+
+MALE_NAMES = [
+    "Александр", "Сергей", "Владимир", "Дмитрий", "Андрей",
+    "Алексей", "Николай", "Иван", "Михаил", "Виктор",
+    "Евгений", "Олег", "Павел", "Максим", "Артём",
+]
+
+FEMALE_NAMES = [
+    "Елена", "Ольга", "Ирина", "Татьяна", "Наталья",
+    "Светлана", "Марина", "Анна", "Юлия", "Екатерина",
+    "Галина", "Людмила", "Надежда", "Вера", "Ксения",
+]
+
+MALE_PATRONYMICS = [
+    "Иванович", "Петрович", "Сергеевич", "Андреевич", "Алексеевич",
+    "Владимирович", "Николаевич", "Дмитриевич", "Александрович", "Михайлович",
+    "Викторович", "Олегович", "Павлович", "Максимович", "Артёмович",
+]
+
+FEMALE_PATRONYMICS = [
+    "Ивановна", "Петровна", "Сергеевна", "Андреевна", "Алексеевна",
+    "Владимировна", "Николаевна", "Дмитриевна", "Александровна", "Михайловна",
+    "Викторовна", "Олеговна", "Павловна", "Максимовна", "Артёмовна",
+]
+
+LAST_NAMES_MALE = [
+    "Иванов", "Петров", "Сидоров", "Кузнецов", "Смирнов",
+    "Попов", "Лебедев", "Козлов", "Новиков", "Морозов",
+    "Волков", "Зайцев", "Соловьёв", "Васильев", "Павлов",
+    "Семёнов", "Голубев", "Виноградов", "Белов", "Тимофеев",
+]
+
+LAST_NAMES_FEMALE = [
+    "Иванова", "Петрова", "Сидорова", "Кузнецова", "Смирнова",
+    "Попова", "Лебедева", "Козлова", "Новикова", "Морозова",
+    "Волкова", "Зайцева", "Соловьёва", "Васильева", "Павлова",
+    "Семёнова", "Голубева", "Виноградова", "Белова", "Тимофеева",
+]
+
+MEDICAL_DATA = [
+    None, None, None,
+    "Аллергия на пенициллин",
+    "Бронхиальная астма",
+    "Сахарный диабет 1 типа",
+    "Близорукость, носит очки",
+    "Пищевая аллергия (орехи, мёд)",
+    "Хронический гастрит",
+    "Нарушение осанки, сколиоз",
+]
+
+
+def rand_phone():
+    p = random.choice(PHONES)
+    return p.format(
+        random.randint(100, 999),
+        random.randint(10, 99),
+        random.randint(10, 99),
+    )
+
+def rand_address():
+    return f"{random.choice(CITIES)}, {random.choice(STREETS)}, д. {random.randint(1, 120)}, кв. {random.randint(1, 200)}"
+
+def gen_parent_name(gender="male"):
+    if gender == "male":
+        return f"{random.choice(LAST_NAMES_MALE)} {random.choice(MALE_NAMES)} {random.choice(MALE_PATRONYMICS)}"
+    return f"{random.choice(LAST_NAMES_FEMALE)} {random.choice(FEMALE_NAMES)} {random.choice(FEMALE_PATRONYMICS)}"
+
+def rand_dob(age_min=7, age_max=18):
+    today = date.today()
+    year = today.year - random.randint(age_min, age_max)
+    month = random.randint(1, 12)
+    day = random.randint(1, 28)
+    return date(year, month, day)
+
 engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -88,6 +179,10 @@ async def seed():
                     password_hash=hash_password("teacher123"),
                     staff_position=position,
                     is_active=True,
+                    phone=rand_phone(),
+                    address=rand_address(),
+                    labor_book_number=f"ТК-{random.randint(100000, 999999)}",
+                    date_of_birth=rand_dob(22, 60),
                 )
                 session.add(t)
         await session.commit()
@@ -105,6 +200,9 @@ async def seed():
                 role="director",
                 password_hash=hash_password("director123"),
                 is_active=True,
+                phone=rand_phone(),
+                address=rand_address(),
+                date_of_birth=rand_dob(40, 65),
             ))
         admin = await session.execute(select(User).where(User.role == "admin"))
         if not admin.scalar_one_or_none():
@@ -115,6 +213,8 @@ async def seed():
                 role="admin",
                 password_hash=hash_password("admin123"),
                 is_active=True,
+                phone=rand_phone(),
+                date_of_birth=rand_dob(25, 55),
             ))
         secretary = await session.execute(select(User).where(User.role == "secretary"))
         if not secretary.scalar_one_or_none():
@@ -125,6 +225,8 @@ async def seed():
                 role="secretary",
                 password_hash=hash_password("secretary123"),
                 is_active=True,
+                phone=rand_phone(),
+                date_of_birth=rand_dob(25, 55),
             ))
         await session.commit()
 
@@ -154,12 +256,22 @@ async def seed():
             result = await session.execute(select(User).where(User.username == username))
             s = result.scalar_one_or_none()
             if not s:
+                gender = "male" if middle.endswith("евич") or middle.endswith("ович") or middle.endswith("ич") else "female"
                 s = User(
                     first_name=first, last_name=last, middle_name=middle,
                     email=f"{username}@school.local",
                     username=username, role="student",
                     password_hash=hash_password("student123"),
                     is_active=True,
+                    phone=rand_phone(),
+                    address=rand_address(),
+                    date_of_birth=rand_dob(10, 18),
+                    mother_name=gen_parent_name("female"),
+                    mother_phone=rand_phone(),
+                    father_name=gen_parent_name("male"),
+                    father_phone=rand_phone(),
+                    emergency_contact=rand_phone(),
+                    medical_info=random.choice(MEDICAL_DATA),
                 )
                 session.add(s)
                 await session.flush()

@@ -74,9 +74,10 @@ async def teacher_analytics_api(
     students = await session.execute(
         select(User).join(Enrollment).where(
             Enrollment.class_id == class_id, User.role == "student"
-        ).order_by(User.last_name)
+        )
     )
     students = students.scalars().all()
+    students.sort(key=lambda u: u.last_name or "")
 
     result = []
     for student in students:
@@ -110,19 +111,24 @@ async def search_users(
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_auth),
 ):
-    """Search users by last_name or first_name, filtered by optional role."""
+    """Search users by last_name or first_name, filtered by optional role.
+    Names are encrypted in DB — filtering is done in Python after decryption."""
     if not q or len(q) < 1:
         return JSONResponse([])
-    stmt = select(User).where(
-        User.last_name.ilike(f"{q}%") | User.first_name.ilike(f"{q}%")
-    )
+    stmt = select(User)
     if role:
         stmt = stmt.where(User.role == role)
-    stmt = stmt.order_by(User.last_name, User.first_name).limit(20)
     results = (await session.execute(stmt)).scalars().all()
+    ql = q.lower()
+    matched = [
+        u for u in results
+        if (u.last_name or "").lower().startswith(ql)
+        or (u.first_name or "").lower().startswith(ql)
+    ]
+    matched.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
     return JSONResponse([
         {"id": str(u.id), "name": f"{u.last_name} {u.first_name}"}
-        for u in results
+        for u in matched[:20]
     ])
 
 #* ─── Current user info ────────────────────────────────────────────────────────────────

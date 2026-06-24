@@ -166,9 +166,10 @@ async def list_users(
     query = select(User)
     if role_filter:
         query = query.where(User.role == role_filter)
-    query = query.order_by(User.role, User.last_name)
+    query = query.order_by(User.role)
     result = await session.execute(query)
     users = result.scalars().all()
+    users.sort(key=lambda u: u.last_name or "")
     return templates.TemplateResponse("admin/users.html", {
         "request": request, "user": user, "users": users, "role_filter": role_filter
     })
@@ -598,9 +599,10 @@ async def class_report(
     students_result = await session.execute(
         select(User).join(Enrollment).where(
             Enrollment.class_id == class_id, User.role == "student"
-        ).order_by(User.last_name, User.first_name)
+        )
     )
     students = students_result.scalars().all()
+    students.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
     
     # Get all subjects
     subjects_result = await session.execute(select(Subject).order_by(Subject.name))
@@ -675,13 +677,14 @@ async def class_report(
 async def salary_report(
     request: Request,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(require_role("director")),
+    user: User = Depends(require_role("admin")),
 ):
     #* Get all teachers with salary data
     result = await session.execute(
-        select(User).where(User.role == "teacher").order_by(User.last_name, User.first_name)
+        select(User).where(User.role == "teacher")
     )
     teachers = result.scalars().all()
+    teachers.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
 
     teacher_data = []
     total_salary = 0
@@ -711,18 +714,18 @@ async def salary_report(
 async def salary_pdf(
     request: Request,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(require_role("director")),
+    user: User = Depends(require_role("admin")),
 ):
-    from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm, cm
     from reportlab.pdfgen import canvas
     from reportlab.lib import colors
 
     #* Fetch teachers
     result = await session.execute(
-        select(User).where(User.role == "teacher").order_by(User.last_name, User.first_name)
+        select(User).where(User.role == "teacher")
     )
     teachers = result.scalars().all()
+    teachers.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
 
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -1195,7 +1198,8 @@ async def manage_schedule(
 ):
     classes = (await session.execute(select(Class).order_by(Class.name))).scalars().all()
     subjects = (await session.execute(select(Subject).order_by(Subject.name))).scalars().all()
-    teachers = (await session.execute(select(User).where(User.role == "teacher").order_by(User.last_name))).scalars().all()
+    teachers = (await session.execute(select(User).where(User.role == "teacher"))).scalars().all()
+    teachers.sort(key=lambda u: u.last_name or "")
 
     #* Load schedule for selected class (only active entries)
     class_id = request.query_params.get("class_id")
@@ -1242,7 +1246,9 @@ async def add_schedule(
     if conflict.scalar_one_or_none():
         classes = await session.execute(select(Class).order_by(Class.name))
         subjects = await session.execute(select(Subject).order_by(Subject.name))
-        teachers = await session.execute(select(User).where(User.role == "teacher").order_by(User.last_name))
+        teachers = await session.execute(select(User).where(User.role == "teacher"))
+        teachers_list = teachers.scalars().all()
+        teachers_list.sort(key=lambda u: u.last_name or "")
         schedules = await session.execute(
             select(Schedule).where(Schedule.class_id == class_id, Schedule.valid_until.is_(None))
             .options(selectinload(Schedule.subject), selectinload(Schedule.teacher))
@@ -1252,7 +1258,7 @@ async def add_schedule(
             "request": request, "user": secretary,
             "classes": classes.scalars().all(),
             "subjects": subjects.scalars().all(),
-            "teachers": teachers.scalars().all(),
+            "teachers": teachers_list,
             "schedules": schedules.scalars().all(),
             "selected_class_id": class_id,
             "error": "Учитель уже занят в это время в другом классе",
@@ -1369,9 +1375,10 @@ async def list_teachers(
     user: User = Depends(require_role("director")),
 ):
     result = await session.execute(
-        select(User).where(User.role == "teacher").order_by(User.last_name, User.first_name)
+        select(User).where(User.role == "teacher")
     )
     teachers = result.scalars().all()
+    teachers.sort(key=lambda u: (u.last_name or "", u.first_name or ""))
 
     #* Get assignments for each teacher
     teacher_assignments = {}
@@ -1412,7 +1419,7 @@ async def edit_teacher_page(
 async def edit_teacher(
     request: Request, teacher_id: str,
     session: AsyncSession = Depends(get_session),
-    user: User = Depends(require_role("director")),
+    user: User = Depends(require_role("admin")),
 ):
     result = await session.execute(select(User).where(User.id == teacher_id))
     target = result.scalar_one_or_none()
@@ -1439,5 +1446,18 @@ async def edit_teacher(
         target.password_hash = hash_password(new_password)
 
     await session.commit()
-    log_action(user_id=str(user.id), action=UPDATE_USER, details={"target_user_id": teacher_id})
-    return RedirectResponse(url="/admin/teachers", status_code=302)
+    log_action(
+        user_id=str(user.id), action=UPDATE_USER,
+        details={
+            "target_user_id": teacher_id,
+            "fields": {
+                "first_name": target.first_name,
+                "last_name": target.last_name,
+                "salary_monthly": target.salary_monthly,
+                "hours_per_week": target.hours_per_week,
+                "experience_years": target.experience_years,
+                "labor_book_number": target.labor_book_number,
+            }
+        },
+    )
+    return RedirectResponse(url="/admin/reports/salary", status_code=302)

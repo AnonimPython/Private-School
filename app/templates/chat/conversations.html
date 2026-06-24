@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block page_title %}
-{% if user.role == 'student' %}Чат с учителями{% elif user.role == 'teacher' %}Чат с учениками{% else %}Чат{% endif %}
+{% if user.role == 'student' %}Чат с учителями{% elif user.role == 'teacher' %}Чат{% else %}Чат{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -16,8 +16,23 @@
       <input type="text" class="chat-search" placeholder="Поиск..." id="chatSearch" oninput="filterContacts(this.value)">
     </div>
     <div class="chat-contacts" id="chatContacts">
+      {% if conversations %}
+      <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Диалоги</div>
+      {% for uid, conv in conversations.items() %}
+      <a href="/chat/{{ uid }}" class="chat-contact conv-contact" data-name="{{ conv.user.last_name }} {{ conv.user.first_name }}" data-role="{{ conv.user.role }}">
+        {% if conv.user.photo_url %}<img class="chat-contact-avatar" src="{{ conv.user.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ conv.user.first_name[0] }}{{ conv.user.last_name[0] }}</div>{% endif %}
+        <div class="chat-contact-info">
+          <div class="chat-contact-name">{{ conv.user.last_name }} {{ conv.user.first_name }}</div>
+          <div class="chat-contact-preview">{{ conv.last_message }}</div>
+        </div>
+        <div class="chat-contact-time">{{ conv.last_time.strftime('%H:%M') if conv.last_time else '' }}</div>
+        {% if conv.unread > 0 %}<div class="chat-contact-unread">{{ conv.unread }}</div>{% endif %}
+      </a>
+      {% endfor %}
+      <div style="padding:0.25rem 1rem;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);margin-top:0.25rem;padding-top:0.5rem">Контакты</div>
+      {% endif %}
+
       {% if user.role == 'student' %}
-      <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Мои учителя</div>
       {% for item in teachers_list %}
       <a href="/chat/{{ item.teacher.id }}" class="chat-contact" data-name="{{ item.teacher.last_name }} {{ item.teacher.first_name }}" data-role="teacher">
         {% if item.teacher.photo_url %}<img class="chat-contact-avatar" src="{{ item.teacher.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ item.teacher.first_name[0] }}{{ item.teacher.last_name[0] }}</div>{% endif %}
@@ -29,7 +44,6 @@
       {% endfor %}
 
       {% elif user.role == 'teacher' %}
-      <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Мои ученики</div>
       {% for s in students_list %}
       <a href="/chat/{{ s.id }}" class="chat-contact" data-name="{{ s.last_name }} {{ s.first_name }}" data-role="student">
         {% if s.photo_url %}<img class="chat-contact-avatar" src="{{ s.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ s.first_name[0] }}{{ s.last_name[0] }}</div>{% endif %}
@@ -39,12 +53,29 @@
         </div>
       </a>
       {% endfor %}
+      {% if staff_list %}
+      <div style="padding:0.25rem 1rem;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);margin-top:0.25rem;padding-top:0.5rem">Персонал</div>
+      {% for s in staff_list %}
+      <a href="/chat/{{ s.id }}" class="chat-contact" data-name="{{ s.last_name }} {{ s.first_name }}" data-role="{{ s.role }}">
+        {% if s.photo_url %}<img class="chat-contact-avatar" src="{{ s.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ s.first_name[0] }}{{ s.last_name[0] }}</div>{% endif %}
+        <div class="chat-contact-info">
+          <div class="chat-contact-name">{{ s.last_name }} {{ s.first_name }}</div>
+          <div class="chat-contact-preview">
+            {% if s.role == 'teacher' %}Учитель
+            {% elif s.role == 'admin' %}Администратор
+            {% elif s.role == 'director' %}Директор
+            {% elif s.role == 'secretary' %}Секретарь
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+      {% endif %}
 
       {% else %}
       {# Admin/director — tabbed contacts #}
       <div class="chat-tab-content" id="tabStudentsContent">
         {% if students_list %}
-        <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Ученики</div>
         {% for s in students_list %}
         <a href="/chat/{{ s.id }}" class="chat-contact" data-name="{{ s.last_name }} {{ s.first_name }}" data-role="student">
           {% if s.photo_url %}<img class="chat-contact-avatar" src="{{ s.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ s.first_name[0] }}{{ s.last_name[0] }}</div>{% endif %}
@@ -58,7 +89,6 @@
 
       <div class="chat-tab-content" id="tabTeachersContent" style="display:none">
         {% if teachers_list %}
-        <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Учителя</div>
         {% for item in teachers_list %}
         <a href="/chat/{{ item.teacher.id }}" class="chat-contact" data-name="{{ item.teacher.last_name }} {{ item.teacher.first_name }}" data-role="teacher">
           {% if item.teacher.photo_url %}<img class="chat-contact-avatar" src="{{ item.teacher.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ item.teacher.first_name[0] }}{{ item.teacher.last_name[0] }}</div>{% endif %}
@@ -70,21 +100,6 @@
         {% endfor %}
         {% endif %}
       </div>
-      {% endif %}
-
-      {% if conversations %}
-      <div style="padding:0.5rem 1rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;border-top:1px solid var(--border);margin-top:0.5rem">Диалоги</div>
-      {% for uid, conv in conversations.items() %}
-      <a href="/chat/{{ uid }}" class="chat-contact conv-contact" data-name="{{ conv.user.last_name }} {{ conv.user.first_name }}" data-role="{{ conv.user.role }}">
-        {% if conv.user.photo_url %}<img class="chat-contact-avatar" src="{{ conv.user.photo_url }}" alt="">{% else %}<div class="chat-contact-avatar">{{ conv.user.first_name[0] }}{{ conv.user.last_name[0] }}</div>{% endif %}
-        <div class="chat-contact-info">
-          <div class="chat-contact-name">{{ conv.user.last_name }} {{ conv.user.first_name }}</div>
-          <div class="chat-contact-preview">{{ conv.last_message }}</div>
-        </div>
-        <div class="chat-contact-time">{{ conv.last_time.strftime('%H:%M') if conv.last_time else '' }}</div>
-        {% if conv.unread > 0 %}<div class="chat-contact-unread">{{ conv.unread }}</div>{% endif %}
-      </a>
-      {% endfor %}
       {% endif %}
     </div>
   </div>
@@ -206,7 +221,13 @@ async function sendMessage() {
         const now = new Date();
         div.innerHTML = '<div>' + text + '</div><div class="chat-message-time">' + now.toLocaleTimeString('ru', {hour:'2-digit',minute:'2-digit'}) + '</div>';
         el.appendChild(div);
-        scrollToBottom(true);
+scrollToBottom(true);
+//* Re-scroll after images load and after dynamic content settles
+setTimeout(function(){ scrollToBottom(true); }, 200);
+setTimeout(function(){ scrollToBottom(true); }, 600);
+document.querySelectorAll('.chat-messages img').forEach(function(img) {
+  img.addEventListener('load', function(){ scrollToBottom(true); });
+});
       }
     }
   } catch(e) {}

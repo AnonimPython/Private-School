@@ -17,8 +17,8 @@ RUN mkdir -p /app/app/static/uploads
 RUN useradd -m -u 1000 user && chown -R user:user /app
 USER user
 
-ENV DEMO_MODE=true
 ENV DATABASE_URL=sqlite+aiosqlite:///./school.db
+ENV DATA_ENCRYPTION_KEY=E5vLdot0kuv6k8leIlqqHKWvG4DqnbNjPC5EU23cdww=
 RUN python seed_data.py
 
 EXPOSE 7860

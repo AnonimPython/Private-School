@@ -20,8 +20,8 @@ from app.database import async_session, get_session
 from app.models.models import User
 
 #* ─── Password hashing ───
-#! bcrypt — recommended for password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+#! Argon2id — modern memory-hard password hash
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 #* ─── hash_password / Хеширование пароля ───
 def hash_password(password: str) -> str:

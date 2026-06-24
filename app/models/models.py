@@ -5,9 +5,11 @@
 #/ =====================================================================================
 
 from sqlmodel import SQLModel, Field, Relationship, Column, UniqueConstraint
+from sqlalchemy import Column
 from datetime import datetime, date, time
 from typing import Optional, List, TYPE_CHECKING
 import uuid
+from app.crypto import EncryptedStr, EncryptedDate
 
 #* ════════════════════════════════════════════════════════════════════════════════════
 #*  USER — user (director, admin, teacher, student)
@@ -23,15 +25,17 @@ class User(SQLModel, table=True):
     password_hash: str = Field(nullable=False)
     #? Role: director, admin, teacher, student, other
     role: str = Field(nullable=False)
-    first_name: str = Field(nullable=False)
-    last_name: str = Field(nullable=False)
-    middle_name: Optional[str] = Field(default=None)       #* Patronymic
-    phone: Optional[str] = Field(default=None)
+    #! AES-256-GCM encrypted
+    first_name: str = Field(sa_column=Column(EncryptedStr, nullable=False))
+    last_name: str = Field(sa_column=Column(EncryptedStr, nullable=False))
+    middle_name: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    phone: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
     is_active: bool = Field(default=True)
     photo_url: Optional[str] = Field(default=None)         #* Profile photo path
 
     #* ─── Teacher-specific fields ────────────────────────────────────────
-    labor_book_number: Optional[str] = Field(default=None)  #* Трудовая книжка
+    #! AES-256-GCM encrypted
+    labor_book_number: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
     experience_years: Optional[int] = Field(default=None)   #* Стаж работы (лет)
     salary_monthly: Optional[float] = Field(default=None, description="Monthly salary in rubles")
     hours_per_week: Optional[float] = Field(default=None, description="Weekly working hours")
@@ -41,14 +45,15 @@ class User(SQLModel, table=True):
 
     #* ─── Personal data (student's personal data) ────────────────────────────────────────
     #! This data is visible only to the student and their teachers (data protection)
-    date_of_birth: Optional[date] = Field(default=None)     #* Date of birth
-    address: Optional[str] = Field(default=None)            #* Residential address
-    mother_name: Optional[str] = Field(default=None)        #* Mother's full name
-    mother_phone: Optional[str] = Field(default=None)       #* Mother's phone
-    father_name: Optional[str] = Field(default=None)        #* Father's full name
-    father_phone: Optional[str] = Field(default=None)       #* Father's phone
-    emergency_contact: Optional[str] = Field(default=None)  #* Emergency contact
-    medical_info: Optional[str] = Field(default=None)       #* Medical information (allergies, etc.)
+    #! All personal data is encrypted with AES-256-GCM
+    date_of_birth: Optional[date] = Field(default=None, sa_column=Column(EncryptedDate, nullable=True))
+    address: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    mother_name: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    mother_phone: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    father_name: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    father_phone: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    emergency_contact: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
+    medical_info: Optional[str] = Field(default=None, sa_column=Column(EncryptedStr, nullable=True))
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow})
@@ -80,7 +85,6 @@ class User(SQLModel, table=True):
     )
     news_posts: List["News"] = Relationship(back_populates="author")
     library_items: List["LibraryItem"] = Relationship(back_populates="uploader")
-
 
 #* ════════════════════════════════════════════════════════════════════════════════════
 #*  CLASS — class (e.g., "10А")

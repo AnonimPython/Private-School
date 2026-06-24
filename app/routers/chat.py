@@ -78,6 +78,7 @@ async def chat_page(
 
     #* For teacher: list of students from their classes
     students_list = []
+    staff_list = []
     if user.role in ("teacher", "admin", "director"):
         if user.role == "teacher":
             assignments = await session.execute(
@@ -90,16 +91,26 @@ async def chat_page(
                         Enrollment.class_id.in_(class_ids),
                         User.role == "student",
                         User.is_active == True,
-                    ).distinct().order_by(User.last_name)
+                    ).distinct()
                 )
                 students_list = students.scalars().all()
+                students_list.sort(key=lambda u: u.last_name or "")
+            #* Other staff (teachers, admin, director, secretary)
+            staff = await session.execute(
+                select(User).where(
+                    User.role.in_(["teacher", "admin", "director", "secretary"]),
+                    User.id != user.id,
+                    User.is_active == True,
+                ).order_by(User.last_name)
+            )
+            staff_list = staff.scalars().all()
         else:
             #* Admin/director: all students
             students = await session.execute(
                 select(User).where(User.role == "student", User.is_active == True)
-                .order_by(User.last_name)
             )
             students_list = students.scalars().all()
+            students_list.sort(key=lambda u: u.last_name or "")
 
     #* For student: list of their teachers; for admin/director: all teachers
     teachers_list = []
@@ -121,9 +132,10 @@ async def chat_page(
     elif user.role in ("admin", "director"):
         teachers = await session.execute(
             select(User).where(User.role == "teacher", User.is_active == True)
-            .order_by(User.last_name)
         )
-        for t in teachers.scalars().all():
+        teachers_list_raw = teachers.scalars().all()
+        teachers_list_raw.sort(key=lambda u: u.last_name or "")
+        for t in teachers_list_raw:
             teachers_list.append({"teacher": t, "subject": None})
 
     chat_tab = "students" if user.role in ("admin", "director") else None
@@ -132,6 +144,7 @@ async def chat_page(
         "request": request, "user": user,
         "conversations": conversations,
         "students_list": students_list,
+        "staff_list": staff_list,
         "teachers_list": teachers_list,
         "chat_tab": chat_tab,
     })
@@ -208,11 +221,13 @@ async def chat_with_user(
             class_ids = [a.class_id for a in assignments.scalars().all()]
             if class_ids:
                 students = await session.execute(select(User).join(Enrollment).where(
-                    Enrollment.class_id.in_(class_ids), User.role == "student", User.is_active == True).distinct().order_by(User.last_name))
+                    Enrollment.class_id.in_(class_ids), User.role == "student", User.is_active == True).distinct())
                 students_list = students.scalars().all()
+                students_list.sort(key=lambda u: u.last_name or "")
         else:
-            students = await session.execute(select(User).where(User.role == "student", User.is_active == True).order_by(User.last_name))
+            students = await session.execute(select(User).where(User.role == "student", User.is_active == True))
             students_list = students.scalars().all()
+            students_list.sort(key=lambda u: u.last_name or "")
     if user.role == "student":
         enrollment = await session.execute(select(Enrollment).where(Enrollment.student_id == user.id))
         enrollment = enrollment.scalar_one_or_none()
@@ -225,8 +240,10 @@ async def chat_with_user(
                     seen.add(a.teacher_id)
                     teachers_list.append({"teacher": a.teacher, "subject": a.subject})
     elif user.role in ("admin", "director"):
-        teachers = await session.execute(select(User).where(User.role == "teacher", User.is_active == True).order_by(User.last_name))
-        for t in teachers.scalars().all():
+        teachers = await session.execute(select(User).where(User.role == "teacher", User.is_active == True))
+        teachers_list_raw = teachers.scalars().all()
+        teachers_list_raw.sort(key=lambda u: u.last_name or "")
+        for t in teachers_list_raw:
             teachers_list.append({"teacher": t, "subject": None})
 
     chat_tab = "students" if user.role in ("admin", "director") else None
