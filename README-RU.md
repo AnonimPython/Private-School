@@ -390,7 +390,3 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ## Лицензия
 
 [MIT](LICENSE)
-
----
-
-**📋 [Roadmap — будущие возможности](ROADMAP.md)**

@@ -314,7 +314,3 @@ First teacher and first student from seed data — useful for quick testing.
 ## License
 
 [MIT](LICENSE)
-
----
-
-**📋 [Roadmap — будущие возможности](ROADMAP.md)**
