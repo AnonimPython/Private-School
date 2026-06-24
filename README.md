@@ -1,6 +1,8 @@
 # School Portal — Electronic Diary
 
 > **Русская версия:** [README-RU.md](README-RU.md)
+>
+> ❗ **Live demo:** <https://anonimpython-private-school.hf.space/login> *(appearance may differ from the screenshots below)*
 
 A full-featured school management system for private schools: schedules, grades, homework, chat, library, analytics, reports.
 
@@ -310,6 +312,17 @@ After seeding (`docker exec school-app-1 python seed_data.py`), these accounts a
 | Student   | иван.иванов@school.local  | student123    |
 
 First teacher and first student from seed data — useful for quick testing.
+
+## Planned
+
+- [ ] **Online lessons (WebRTC)** — teacher screen share, student view, mic, chat
+- [ ] **Excel exports** — class grade sheets with averages and absences
+- [ ] **Student profiles** — auto-generated character reference with grades, behavior
+- [ ] **Teacher substitution** — admin silently reassigns a lesson to another teacher
+- [ ] **Meal module** — weekly menu, attendance tracking, monthly reports
+- [ ] **Tests & quizzes** — teacher creates, students take online, auto-grading
+- [ ] **QR attendance** — teacher shows QR, student scans to mark presence
+- [ ] **i18n / multi-language** — English, Kazakh, etc.
 
 ## License
 
