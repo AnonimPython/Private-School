@@ -147,7 +147,9 @@ All settings in [`config.py`](config.py) — override via `.env` or environment 
 ```
 ├── app/
 │   ├── main.py              # FastAPI entry point
-│   ├── auth.py              # JWT + bcrypt auth
+│   ├── auth.py              # JWT + Argon2id auth
+│   ├── crypto.py            # AES-256-GCM data encryption
+│   ├── update_checker.py    # GitHub release version checker
 │   ├── database.py          # SQLModel + engine
 │   ├── logger.py            # MongoDB action logging
 │   ├── models/models.py     # 10 SQLModel tables
@@ -292,7 +294,8 @@ Requirements: PostgreSQL 14+ and MongoDB 6+ running locally.
 - **Backend:** Python 3.11, FastAPI, SQLModel, SQLAlchemy async
 - **Frontend:** Jinja2, custom CSS (light/dark theme), Chart.js, ReportLab (PDF)
 - **Databases:** PostgreSQL (main), MongoDB (action logs)
-- **Auth:** JWT (HTTP-only cookies), bcrypt
+- **Auth:** JWT (HTTP-only cookies), password hashing via **Argon2id** (memory-hard, GPU/ASIC resistant)
+- **Encryption:** **AES-256-GCM** — personal data (passports, phones, addresses) encrypted at rest with a configurable key
 - **Deployment:** Docker, Docker Compose
 
 ## Test Accounts

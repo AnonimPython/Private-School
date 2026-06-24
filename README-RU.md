@@ -214,10 +214,12 @@ docker exec school-app-1 python seed_data.py
 ```
 ├── app/
 │   ├── main.py              # Точка входа FastAPI
-│   ├── auth.py              # JWT + bcrypt
-│   ├── database.py          # SQLModel + engine
-│   ├── logger.py            # Логирование в MongoDB
-│   ├── models/models.py     # 10 таблиц (User, Grade, Schedule, …)
+│   ├── auth.py              # JWT + Argon2id аутентификация
+│   ├── crypto.py            # AES-256-GCM шифрование данных
+│   ├── update_checker.py    # Проверка обновлений через GitHub
+│   ├── database.py          # SQLModel + движок
+│   ├── logger.py            # Логирование действий в MongoDB
+│   ├── models/models.py     # 10 таблиц SQLModel
 │   ├── routers/             # 9 модулей маршрутов
 │   │   ├── admin.py         # Пользователи, классы, предметы, отчёты, пароли
 │   │   ├── teacher.py       # Оценки, ДЗ, аналитика
@@ -364,7 +366,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - **Бэкенд:** Python 3.11, FastAPI, SQLModel, SQLAlchemy async
 - **Фронтенд:** Jinja2, кастомный CSS (светлая/тёмная тема), Chart.js, ReportLab (PDF)
 - **Базы данных:** PostgreSQL (основная), MongoDB (логи действий)
-- **Аутентификация:** JWT (HTTP-only cookies), bcrypt
+- **Аутентификация:** JWT (HTTP-only cookies), хеширование паролей через **Argon2id** (устойчив к GPU/ASIC-атакам)
+- **Шифрование:** **AES-256-GCM** — личные данные (паспорта, телефоны, адреса) шифруются в БД с настраиваемым ключом
 - **Развёртывание:** Docker, Docker Compose
 
 ---
